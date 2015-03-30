@@ -21,59 +21,64 @@ DataPlace rbplace;
 int main(int argc, char *argv[])
 {
 	setlocale(LC_ALL, "Russian");
-	//NoParams	noParams		(argc,argv);
-	//BoolParam	helpRequest		("help",argc,argv);
-	//BoolParam	helpRequest1	("h",argc,argv);
-	//StringParam	auxFileName		("f",argc,argv);
-	//BoolParam	save			("save",argc,argv);
-	//BoolParam	keepOverlaps	("skipLegal",argc,argv);
-	//BoolParam	greedy			("greedy",argc,argv);
+	NoParams	noParams		(argc,argv);
+	BoolParam	helpRequest		("help",argc,argv);
+	BoolParam	helpRequest1	("h",argc,argv);
+	StringParam	auxFileName		("f",argc,argv);
+	StringParam	outFileName		("save",argc,argv);
+	BoolParam	keepOverlaps	("skipLegal",argc,argv);
+	BoolParam	detailed		("detailed",argc,argv);
+	BoolParam	gr				("greedy",argc,argv);
 	//BoolParam	viewer			("viewer",argc,argv);
 
 	//if (noParams.found() || helpRequest.found() || helpRequest1.found())
 	//{
-	//	cout << "  Use '-help' or '-f filename.aux' " << endl;
-	//	cout <<"Options\n"<<"-save \n"<<"-greedy (no annealing, just greedy moves)\n\n ";
+	//	cout<<"  Use '-help' or '-f filename.aux' "<<endl;
+	//	cout<<"Options\n"
+	//		<<"-save filename.pl\n"
+	//		<<"-detailed (detailed placement, default global)\n"
+	//		<<"-greedy (no annealing, just greedy moves)\n\n ";
 	//	exit(0);
 	//}
 
 	const char* aux = "ibm_test.aux";
 	rbplace.Start(aux);
-	//DataPlace rbplace;
+
+	//rbplace.Start(auxFileName);
 
 	//if(!keepOverlaps.found())
 	//	rbplace.remOverlaps(); //легализация
 
 	double initHPWL = rbplace.evalHPWL();
 
-	cout << " ====== Launching Global Placement ... " << endl;
-	cout <<setprecision(10)<<"Initial Center-to-Center WL: "<<initHPWL<<endl;
+	cout<<" ====== Launching Global Placement ... "<<endl;
+	cout<<setprecision(10)<<" Initial Center-to-Center WL: "<<initHPWL<<endl;
 
-	//Timer SATimer;  
-	SimAnneal SA(rbplace);
+	const clock_t start = clock();
+	SimAnneal SA(rbplace, false, false);
 	//rbplace.remOverlaps();
-	//SATimer.stop();
+	const double GlobalTime = static_cast<double>(clock() - start) / CLOCKS_PER_SEC;
 
 	//double HPWLafter = rbplace.evalHPWL();
 
-	//cout << " Final Center-to-Center WL: "<<HPWLafter<<endl;
+	//cout<<" Final Center-to-Center WL: "<<HPWLafter<<endl;
 
 	//cout<<"  % improvement in HPWL is "<<(initHPWL - HPWLafter)*100/HPWLafter<<endl;
-	//cout<<"Time taken = "<<SATimer.getUserTime()<<" seconds\n";
+	cout<<"Time taken = "<<GlobalTime<<" seconds\n";
 
 	bool viewer = true;
 
 	if(viewer)
 	{
-		cout<<"View visualization .pl"<<endl;
+		cout<<"\n\t -<View visualization .pl>-"<<endl;
 		opengl_control(argc,argv);
 	}
 
-	//if(save.found())
+	//if(outFileName.found())
 	//{
-	//	cout << "Saving out.pl" << endl;
-	//	//DataPlace.savePlacement("out.pl");
- //   }
+	//	cout<<"Saving out.pl"<<endl;
+	//	rbplace.savePlacement("out.pl");
+	//}
 
 	return 0;
 }

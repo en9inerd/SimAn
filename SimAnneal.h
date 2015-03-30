@@ -27,10 +27,12 @@ private:
 	double curTemp;
 	double stopTemp;
 
+	bool greedy, detailed;
 	double hpwl;
 	double overlap;
 	double penaltyRow;
 	double oldCost, newCost;
+	double lambda, lambdacost;
 
 	vector<size_t> movables;
 	vector<Point> oldPlace;
@@ -41,7 +43,7 @@ private:
 
 	void initPlacement(DataPlace& );
 public:
-	SimAnneal(DataPlace& rbplace);
+	SimAnneal(DataPlace& rbplace, bool gr, bool det);
 };
 
 #endif

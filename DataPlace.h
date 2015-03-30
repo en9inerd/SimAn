@@ -93,6 +93,7 @@ public:
 	void setLocation(size_t id, const Point& pt); //-
 	
 	void remOverlaps(); //Legalization
+	void savePlacement(const char*);
 	
 	double RandomDouble(double min, double max);
 	unsigned int RandomUnsigned(unsigned int num1, unsigned int num2);

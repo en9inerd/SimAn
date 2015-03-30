@@ -7,10 +7,11 @@ using std::cout;
 using std::endl;
 using std::setw;
 
-SimAnneal::SimAnneal(DataPlace& rbplace)
-	: rb(rbplace),
+SimAnneal::SimAnneal(DataPlace& rbplace, bool gr, bool det)
+	: rb(rbplace), greedy(gr), detailed(det),
 		oldCost(0), newCost(0),
-		oldPlace(0), newPlace(0)
+		oldPlace(0), newPlace(0),
+		lambda(1), lambdacost(1)
 {
 	//negAcceptCount = posAcceptCount = 0;
 	BBox layoutBBox(rb);
@@ -20,7 +21,7 @@ SimAnneal::SimAnneal(DataPlace& rbplace)
 	cout << "Placement area: " << layoutXSize << " x " << layoutYSize << endl;
 	cout << "Num move_cells: " << rb.NumCells << endl;
 
-	initPlacement(rb);
+	if(!detailed) initPlacement(rb);
 
 	hpwl = rb.evalHPWL();
 	overlap = rb.calcOverlap();
@@ -38,6 +39,7 @@ SimAnneal::SimAnneal(DataPlace& rbplace)
 		<< " Cost: " << oldCost << endl;
 
 	anneal();
+	//rb.print_nodes();
 
 	cout << "Final:\t HWPL: " << rb.evalHPWL() << " Over: " << rb.calcOverlap(true) << endl;
 }
@@ -101,27 +103,18 @@ void SimAnneal::generate()
 		size_t site = rb.RandomUnsigned(0,cr.num_sites);
 		Point randLoc(cr.coord_x+site*cr.site_sp, cr.coord_y, &cr);
 
-		//bool foundNode = false;
+		bool foundNode = false;
 		for(vector<node* >::const_iterator it = cr.ls.begin(); it != cr.ls.end(); it++)
 		{
 			if((*it)->pos_x == randLoc.x)
 			{
-				//foundNode = true;
+				foundNode = true;
 				movables.pop_back();
 				oldPlace.pop_back();
 				break;
 			}
-			else if(randLoc.x < (*it)->pos_x)
-			{
-				newPlace.push_back(randLoc);
-				break;
-			}
-			else if ( (it == cr.ls.end()-1) && (*it)->pos_x < randLoc.x )
-			{
-				newPlace.push_back(randLoc);
-				break;
-			}
 		}
+		if(!foundNode) newPlace.push_back(randLoc);
 		//if(!foundNode) cout << "displace: " << randIdx1 << "->" <<  crow << "," << site << endl;
 	}
 	else

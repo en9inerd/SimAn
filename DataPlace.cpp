@@ -307,15 +307,15 @@ void DataPlace::parsePl()
 
 void DataPlace::parser()
 {
-	cout<<"Parser..."<<endl;
+	cout<<" << Parser... >> "<<endl;
 	cout<<" [ ";
 	parseNodes();
 	parseNets();
 	parseScl();
 	parsePl();
 	cout<<" ] "<<endl;
+	cout<<endl;
 }
-
 
 void DataPlace::print_nodes()
 {
