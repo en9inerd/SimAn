@@ -87,10 +87,12 @@ public:
 	double findLimitRow();
 	double evalHPWL();
 	double calcOverlap(bool det=false);
+	double calcPRow();
+	void checkPRow();
 	double calcInstHPWL(vector<size_t>& movables);
 	double calcInstOverlap(vector<size_t>& movables);
-	void updateCells(const vector<size_t>& movables, const vector<Point>& soln);
-	void setLocation(size_t id, const Point& pt); //-
+	void updateCells(const vector<size_t>& movables, const vector<Point>& soln, double& prow);
+	void setLocation(size_t id, const Point& pt, double& prow); //-
 	
 	void remOverlaps(); //Legalization
 	void savePlacement(const char*);

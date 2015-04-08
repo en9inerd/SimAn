@@ -22,17 +22,17 @@ private:
 
 	DataPlace &rb;
 	double layoutXSize, layoutYSize, layoutArea;
-	unsigned int maxIter;
+	size_t maxIter;
 	double initTemp;
 	double curTemp;
 	double stopTemp;
 
 	bool greedy, detailed;
-	double hpwl;
-	double overlap;
+	double hpwl, avghpwl, totalhpwl;
+	double overlap, avgoverlap, totaloverlap;
 	double penaltyRow;
 	double oldCost, newCost;
-	double lambda, lambdacost;
+	double lambda;
 
 	vector<size_t> movables;
 	vector<Point> oldPlace;

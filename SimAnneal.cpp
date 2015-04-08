@@ -11,9 +11,9 @@ SimAnneal::SimAnneal(DataPlace& rbplace, bool gr, bool det)
 	: rb(rbplace), greedy(gr), detailed(det),
 		oldCost(0), newCost(0),
 		oldPlace(0), newPlace(0),
-		lambda(1), lambdacost(1)
+		lambda(1)
 {
-	//negAcceptCount = posAcceptCount = 0;
+	negAcceptCount = posAcceptCount = 0;
 	BBox layoutBBox(rb);
 	layoutXSize = fabs(layoutBBox.getWidth());
 	layoutYSize = fabs(layoutBBox.getHeight());
@@ -25,20 +25,20 @@ SimAnneal::SimAnneal(DataPlace& rbplace, bool gr, bool det)
 
 	hpwl = rb.evalHPWL();
 	overlap = rb.calcOverlap();
+	penaltyRow = rb.calcPRow();
 	oldCost = cost();
 
-	//initTemp = curTemp = 40000;
-	//stopTemp = 40;
 	initTemp = curTemp = hpwl / rb.NumNets;
 	stopTemp = curTemp/100;
 	unsigned int k = 1;
-	maxIter = k * rb.NumCells; //pow(rb.NumCells,(4.0/3));
+	maxIter = k * rb.NumCells;
 
 	cout << "Initial:\t Temp: " << curTemp << " Iter: " << maxIter 
 		<< " HWPL: " << rb.evalHPWL() << " Over: " << rb.calcOverlap() 
 		<< " Cost: " << oldCost << endl;
 
 	anneal();
+	rb.checkPRow();
 	//rb.print_nodes();
 
 	cout << "Final:\t HWPL: " << rb.evalHPWL() << " Over: " << rb.calcOverlap(true) << endl;
@@ -50,26 +50,40 @@ void SimAnneal::anneal()
 	unsigned int j = 0;
 	while (curTemp > stopTemp)
 	{
+		negAcceptCount = posAcceptCount = 0;
+		totaloverlap = totalhpwl = 0;
+
 		itCount = 0;
+		double avgCost = 0, totalCost = 0;
 
 		cout<<"It#: "<<j<<"\tTemp: "<<curTemp<<endl;
 
 		while (itCount++ <= maxIter)
 		{
-			oldCost = hpwl + 10*overlap;
-
+			totalhpwl += hpwl;
+			totaloverlap += overlap;
+			if (!(itCount%(maxIter/20)))
+			{
+				avghpwl = totalhpwl / itCount;
+				avgoverlap = totaloverlap / itCount;
+				if (avgoverlap == 0)
+					lambda = 1;
+				else
+					lambda = (avghpwl > avgoverlap)? avghpwl/avgoverlap : 1;
+				oldCost = hpwl + overlap;
+			}
 			generate();
 
 			hpwl -= rb.calcInstHPWL(movables);
 			overlap -= rb.calcInstOverlap(movables);
-			rb.updateCells(movables, newPlace);
+			rb.updateCells(movables, newPlace, penaltyRow);
 			newCost = cost();
 
 			if (!accept(newCost, oldCost, curTemp))
 			{
 				hpwl -= rb.calcInstHPWL(movables);
 				overlap -= rb.calcInstOverlap(movables);
-				rb.updateCells(movables, oldPlace);
+				rb.updateCells(movables, oldPlace, penaltyRow);
 				oldCost = cost();
 			}
 			else
@@ -79,7 +93,7 @@ void SimAnneal::anneal()
 		}
 		update(curTemp);
 		j++;
-		cout << "HWPL: " << rb.evalHPWL() <<":"<<hpwl<< " Over: " << rb.calcOverlap(true) <<":"<<overlap<< endl;
+		cout << " HPWL: " << rb.evalHPWL() <<":"<<hpwl<< " Over: " << rb.calcOverlap(true) <<":"<<overlap<< " penRow: " << rb.calcPRow() <<":"<<penaltyRow<<endl;
 	}
 }
 
@@ -119,12 +133,10 @@ void SimAnneal::generate()
 	}
 	else
 	{
-		size_t randIdx2 = rb.RandomUnsigned(0,rb.NumCells);
+		size_t randIdx2;
 
-		while(randIdx2 == randIdx1 || rb.nodes[randIdx1].lRow == rb.nodes[randIdx2].lRow)
-		{
-			randIdx2 = rb.RandomUnsigned(0,rb.NumCells);
-		}
+		do randIdx2 = rb.RandomUnsigned(0,rb.NumCells);
+		while(randIdx2 == randIdx1);
 
 		movables.push_back(randIdx2);
 		oldPlace.push_back(Point(rb.nodes[randIdx2].pos_x,rb.nodes[randIdx2].pos_y,rb.nodes[randIdx2].lRow));
@@ -142,7 +154,7 @@ double SimAnneal::cost()
 	hpwl += rb.calcInstHPWL(movables);
 	overlap += rb.calcInstOverlap(movables);
 
-	return(hpwl + 10*overlap);
+	return(hpwl + overlap);
 }
 
 bool SimAnneal::accept(double newCost, double oldCost, double curTemp)

@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <tuple>
+#include <unordered_set>
 using namespace std;
 
 DataPlace::DataPlace() : LengthNodes(0), heightSC(0)
@@ -25,6 +26,7 @@ void DataPlace::Start(const char* p_aux)
 {
 	parseAuxFile(p_aux);
 	parser();
+	heightSC = rows[0].h;
 }
 
 void DataPlace::parseAuxFile(const char* p_aux)
@@ -429,9 +431,9 @@ double DataPlace::calcOverlap(bool det)
 					while( ( (*it)->pos_x + (*it)->w ) > (*next)->pos_x )
 					{
 						if ( ( (*it)->pos_x + (*it)->w ) > ( (*next)->pos_x + (*next)->w ) )
-							totalOverlap += (*next)->w;
+							totalOverlap += (*next)->w * heightSC;
 						else
-							totalOverlap += fabs( ( (*it)->pos_x + (*it)->w ) - (*next)->pos_x);
+							totalOverlap += fabs( ( (*it)->pos_x + (*it)->w ) - (*next)->pos_x) * heightSC;
 						next++;
 						if( next == itR->ls.end() ) break;
 					}
@@ -445,14 +447,22 @@ double DataPlace::calcOverlap(bool det)
 
 double DataPlace::calcInstHPWL(vector<size_t>& movables) // вектор movables содержит номера ячеек (1-2) выбранных для перемещения
 {
+	unordered_set<size_t> seenNets;
+	if(movables.size() == 2)
+		seenNets.insert(nodes[movables.front()].nets_of_nodes.begin(), nodes[movables.front()].nets_of_nodes.end());
+
 	double totalHPWL = 0;
 
 	vector<element* >::iterator elMinY, elMaxY;
 	vector<element* >::iterator elMinX, elMaxX;
 
 	for(vector<size_t>::iterator it = movables.begin(); it != movables.end(); it++ )
+	{
 		for(vector<size_t>::iterator itN = nodes[*it].nets_of_nodes.begin(); itN != nodes[*it].nets_of_nodes.end(); itN++)
 		{
+			if(movables.size() == 2 && it == movables.end()-1)
+				if(seenNets.find(*itN) != seenNets.end())
+					continue;
 			tie(elMinY, elMaxY) = minmax_element(nets[*itN].ls.begin(), nets[*itN].ls.end(),
 				[] (element* const& s1, element* const& s2)
 				{
@@ -468,6 +478,7 @@ double DataPlace::calcInstHPWL(vector<size_t>& movables) // вектор movables соде
 			totalHPWL += ( fabs( (*elMaxX)->pos_x + 0.5*(*elMaxX)->w - (*elMinX)->pos_x - 0.5*(*elMinX)->w) 
 						 + fabs( (*elMaxY)->pos_y + 0.5*(*elMaxY)->h - (*elMinY)->pos_y - 0.5*(*elMinY)->h) );	
 		}
+	}
 
 	return totalHPWL;
 }
@@ -475,21 +486,34 @@ double DataPlace::calcInstHPWL(vector<size_t>& movables) // вектор movables соде
 double DataPlace::calcInstOverlap(vector<size_t>& movables)
 {
 	double totalOverlap = 0;
-	//vector<size_t>::iterator iterBegin = movables.begin();
-	//vector<size_t>::iterator iterEnd = movables.end();
 
-	//if(movables.size() == 2)
-	//{
-	//	node& N1 = nodes[movables[0]];
-	//	node& N2 = nodes[movables[1]];
-	//	if(N1.lRow == N2.lRow)
-	//	{
-	//		if(N1.pos_x + N1.w > N2.pos_x && N1.pos_x < N2.pos_x)
-	//			iterEnd -= 1;
-	//		else if(N2.pos_x + N2.w > N1.pos_x && N2.pos_x < N1.pos_x)
-	//			iterBegin += 1;
-	//	}
-	//}
+	if(movables.size() == 2)
+	{
+		node& N1 = nodes[movables[0]];
+		node& N2 = nodes[movables[1]];
+		if(N1.lRow == N2.lRow && (N1.pos_x + N1.w > N2.pos_x || N2.pos_x + N2.w > N1.pos_x) )
+		{
+			vector<node* >::iterator next;
+			for(vector<node* >::iterator it = N1.lRow->ls.begin(); it != N1.lRow->ls.end(); it++)
+			{
+				if(it != N1.lRow->ls.end()-1)
+				{
+					next = it + 1;
+
+					while( ( (*it)->pos_x + (*it)->w ) > (*next)->pos_x )
+					{
+						if ( ( (*it)->pos_x + (*it)->w ) > ( (*next)->pos_x + (*next)->w ) )
+							totalOverlap += (*next)->w * heightSC;
+						else
+							totalOverlap += fabs( ( (*it)->pos_x + (*it)->w ) - (*next)->pos_x) * heightSC;
+						next++;
+						if( next == N1.lRow->ls.end() ) break;
+					}
+				}
+			}
+			return totalOverlap;
+		}
+	}
 
 	for(vector<size_t>::iterator itM = movables.begin(); itM != movables.end(); itM++)
 	{
@@ -507,34 +531,58 @@ double DataPlace::calcInstOverlap(vector<size_t>& movables)
 				continue;
 
 			if ((mLeftEdge >= everyLeftEdge) && (mRightEdge <= everyRightEdge))
-				totalOverlap += nodes[*itM].w;
+				totalOverlap += nodes[*itM].w * heightSC;
 			else if ((mLeftEdge <= everyLeftEdge) && (mRightEdge >= everyRightEdge))
-				totalOverlap += (*it)->w;
+				totalOverlap += (*it)->w * heightSC;
 			else if ((mLeftEdge > everyLeftEdge) && (mLeftEdge < everyRightEdge))
-				totalOverlap += fabs(everyRightEdge - mLeftEdge);
+				totalOverlap += fabs(everyRightEdge - mLeftEdge) * heightSC;
 			else if ((mRightEdge > everyLeftEdge) && (mRightEdge < everyRightEdge))
-				totalOverlap += fabs(mRightEdge - everyLeftEdge);
+				totalOverlap += fabs(mRightEdge - everyLeftEdge) * heightSC;
 		}
-		//totalOverlap *= Row.h;
 	}
 	return totalOverlap;
 }
 
-void DataPlace::updateCells(const vector<size_t>& movables, const vector<Point>& soln)
+double DataPlace::calcPRow()
 {
-	for(int i=0; i<movables.size(); i++)
+	double totalPRow = 0;
+	double limitRow = findLimitRow();
+
+	for(vector<row>::iterator it = rows.begin(); it != rows.end(); it++)
 	{
-		setLocation(movables[i], soln[i]);
+		totalPRow += fabs(it->busySRow - limitRow);
+	}
+	return totalPRow;
+}
+
+void DataPlace::checkPRow()
+{
+	for(vector<row>::iterator it = rows.begin(); it != rows.end(); it++)
+	{
+		cout<<it->busySRow<<endl;
+		if(it->busySRow > it->num_sites*it->site_sp)
+			cout<<it->coord_y<<endl;
 	}
 }
 
-void DataPlace::setLocation(size_t id, const Point& pt)
+void DataPlace::updateCells(const vector<size_t>& movables, const vector<Point>& soln, double& prow)
+{
+	for(int i=0; i<movables.size(); i++)
+	{
+		setLocation(movables[i], soln[i], prow);
+	}
+}
+
+void DataPlace::setLocation(size_t id, const Point& pt, double& prow)
 {
 	vector<node* >& R = nodes[id].lRow->ls;
 	for(vector<node* >::iterator it = R.begin(); it != R.end(); it++)
 	{
 		if (nodes[id].name == (*it)->name)
 		{
+			prow -= fabs(nodes[id].lRow->busySRow - findLimitRow());
+			nodes[id].lRow->busySRow -= nodes[id].w;
+			prow += fabs(nodes[id].lRow->busySRow - findLimitRow());
 			R.erase(it);
 			break;
 		}
@@ -548,12 +596,18 @@ void DataPlace::setLocation(size_t id, const Point& pt)
 	{
 		if(pt.x <= (*it)->pos_x)
 		{
+			prow -= fabs(nodes[id].lRow->busySRow - findLimitRow());
 			nodes[id].lRow->ls.insert(it,&nodes[id]);
+			nodes[id].lRow->busySRow += nodes[id].w;
+			prow += fabs(nodes[id].lRow->busySRow - findLimitRow());
 			break;
 		}
 		else if ( (it == nodes[id].lRow->ls.end()-1) && (*it)->pos_x <= pt.x )
 		{
+			prow -= fabs(nodes[id].lRow->busySRow - findLimitRow());
 			nodes[id].lRow->ls.insert(nodes[id].lRow->ls.end(),&nodes[id]);
+			nodes[id].lRow->busySRow += nodes[id].w;
+			prow += fabs(nodes[id].lRow->busySRow - findLimitRow());
 			break;
 		}
 	}

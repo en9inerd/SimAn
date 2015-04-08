@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 	StringParam	outFileName		("save",argc,argv);
 	BoolParam	keepOverlaps	("skipLegal",argc,argv);
 	BoolParam	detailed		("detailed",argc,argv);
-	BoolParam	gr				("greedy",argc,argv);
+	BoolParam	greedy			("greedy",argc,argv);
 	//BoolParam	viewer			("viewer",argc,argv);
 
 	//if (noParams.found() || helpRequest.found() || helpRequest1.found())
@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 	//rbplace.Start(auxFileName);
 
 	//if(!keepOverlaps.found())
-	//	rbplace.remOverlaps(); //легализация
+	//	rbplace.remOverlaps();
 
 	double initHPWL = rbplace.evalHPWL();
 
@@ -55,15 +55,15 @@ int main(int argc, char *argv[])
 	cout<<setprecision(10)<<" Initial Center-to-Center WL: "<<initHPWL<<endl;
 
 	const clock_t start = clock();
-	SimAnneal SA(rbplace, false, false);
+	SimAnneal SA(rbplace, false, false); // (rbplace, gr, detailed)
 	//rbplace.remOverlaps();
 	const double GlobalTime = static_cast<double>(clock() - start) / CLOCKS_PER_SEC;
 
-	//double HPWLafter = rbplace.evalHPWL();
+	double HPWLafter = rbplace.evalHPWL();
 
-	//cout<<" Final Center-to-Center WL: "<<HPWLafter<<endl;
+	cout<<" Final Center-to-Center WL: "<<HPWLafter<<endl;
 
-	//cout<<"  % improvement in HPWL is "<<(initHPWL - HPWLafter)*100/HPWLafter<<endl;
+	cout<<"  % improvement in HPWL is "<<(initHPWL - HPWLafter)*100/HPWLafter<<endl;
 	cout<<"Time taken = "<<GlobalTime<<" seconds\n";
 
 	bool viewer = true;
