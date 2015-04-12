@@ -613,6 +613,20 @@ void DataPlace::setLocation(size_t id, const Point& pt, double& prow)
 	}
 }
 
+void DataPlace::remOverlaps()
+{
+	double offset;
+	for(vector<row>::iterator itR = rows.begin(); itR != rows.end(); itR++)
+	{
+		offset = itR->coord_x + (itR->num_sites*itR->site_sp - itR->busySRow)/2;
+		for(vector<node*>::iterator it = itR->ls.begin(); it != itR->ls.end(); it++)
+		{
+			(*it)->pos_x = offset;
+			offset += (*it)->w;
+		}
+	}
+}
+
 double DataPlace::RandomDouble(double min, double max)
 {
 	return (double)(rand())/RAND_MAX*(max - min) + min;

@@ -12,17 +12,19 @@ class SimAnneal
 {
 private: 
 	void generate();
+	void calibrate();
 	double cost();
 	bool accept(double newCost, double oldCost, double curTemp);
 	void update(double& curTemp);
 	void anneal();
 
-	//double windowfactor;
-	//double xspan, yspan;
+	double windowfactor;
+	double xspan, yspan;
 
 	DataPlace &rb;
 	double layoutXSize, layoutYSize, layoutArea;
 	size_t maxIter;
+	size_t calibMaxIter;
 	double initTemp;
 	double curTemp;
 	double stopTemp;

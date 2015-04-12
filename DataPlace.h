@@ -57,7 +57,7 @@ class DataPlace
 public:
 	unsigned NumNodes; // include NumTerminals
 	unsigned NumTerminals;
-	unsigned NumCells;
+	unsigned NumCells; //without terminals
 	unsigned NumRows;
 	unsigned NumNets;
 	unsigned NumPins;

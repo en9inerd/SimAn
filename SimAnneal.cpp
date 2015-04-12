@@ -9,6 +9,7 @@ using std::setw;
 
 SimAnneal::SimAnneal(DataPlace& rbplace, bool gr, bool det)
 	: rb(rbplace), greedy(gr), detailed(det),
+		calibMaxIter(500),
 		oldCost(0), newCost(0),
 		oldPlace(0), newPlace(0),
 		lambda(1)
@@ -30,12 +31,35 @@ SimAnneal::SimAnneal(DataPlace& rbplace, bool gr, bool det)
 
 	initTemp = curTemp = hpwl / rb.NumNets;
 	stopTemp = curTemp/100;
-	unsigned int k = 1;
+	unsigned int k = 2;
 	maxIter = k * rb.NumCells;
 
 	cout << "Initial:\t Temp: " << curTemp << " Iter: " << maxIter 
 		<< " HWPL: " << rb.evalHPWL() << " Over: " << rb.calcOverlap() 
 		<< " Cost: " << oldCost << endl;
+
+	double areaPerCell = layoutArea/rb.NumCells;
+	double layoutAR = layoutXSize/layoutYSize;
+	double widthPerCell = sqrt(areaPerCell*layoutAR);
+	double heightPerCell = widthPerCell/layoutAR;
+
+	double minyspan = 2*(rb.rows[1].coord_y-rb.rows[0].coord_y);
+	double minxspan = 5*widthPerCell;
+
+	windowfactor = log10(curTemp/stopTemp)/log10(initTemp/stopTemp);
+	const double scale = 15;
+	xspan = windowfactor*scale*widthPerCell;
+	yspan = windowfactor*scale*heightPerCell;
+
+	if(xspan < minxspan)
+		xspan = minxspan;
+	if(yspan < minyspan)
+		yspan = minyspan;
+
+	//calibrate();
+
+	//initTemp = curTemp;
+	//stopTemp = curTemp/100;
 
 	anneal();
 	rb.checkPRow();
@@ -70,7 +94,7 @@ void SimAnneal::anneal()
 					lambda = 1;
 				else
 					lambda = (avghpwl > avgoverlap)? avghpwl/avgoverlap : 1;
-				oldCost = hpwl + overlap;
+				oldCost = hpwl + overlap + 1.4*lambda*penaltyRow;
 			}
 			generate();
 
@@ -154,16 +178,22 @@ double SimAnneal::cost()
 	hpwl += rb.calcInstHPWL(movables);
 	overlap += rb.calcInstOverlap(movables);
 
-	return(hpwl + overlap);
+	return(hpwl + overlap + 1.4*lambda*penaltyRow);
 }
 
 bool SimAnneal::accept(double newCost, double oldCost, double curTemp)
 {
 	if(newCost <= oldCost)
+	{
+		posAcceptCount++;
 		return(true);
+	}
 
 	if (rb.RandomDouble(0,1) < exp(-fabs(newCost-oldCost)/curTemp))
+	{
+		negAcceptCount++;
 		return(true);
+	}
 
 	return(false);
 }
@@ -178,6 +208,81 @@ void SimAnneal::update(double& _curTemp)
 		_curTemp *= 0.90;
 	else
 		_curTemp *= 0.96;
+}
+
+void SimAnneal::calibrate()
+{
+	cout<<"Performing a warm-up run to calibrate acceptance rates..."<<endl;
+	cout<<setw(10)<<"Iter"
+		<<setw(10)<<"\tTemp"
+		<<setw(10)<<"\tNAR"
+		<<setw(10)<<"\tAR"
+		<<setw(10)<<"\tCost(HPWL+OV+PR)"<<endl;
+
+	double oldTemp = DBL_MAX;
+	int it = 0;
+	int maxIter = 500;
+
+	while(fabs(oldTemp-curTemp)/oldTemp > 0.01 && it <maxIter)
+	{
+		++it;
+		oldTemp = curTemp;
+		negAcceptCount = posAcceptCount = 0;
+		totaloverlap = totalhpwl = 0;
+		itCount = 0;
+		cout<<"[ ";
+
+		while (itCount++ <= calibMaxIter)
+		{
+			totalhpwl += hpwl;
+			totaloverlap += overlap;
+			if( !(itCount%(calibMaxIter/5)) )
+			{
+				cout<<".";
+				cout.flush();
+			}
+			if(itCount == 1)
+			{
+				avghpwl = totalhpwl/itCount;
+				avgoverlap = totaloverlap/itCount;
+				if(avgoverlap == 0 )
+					lambda = 1;
+				else
+					lambda = (avghpwl>avgoverlap)?avghpwl/avgoverlap:1;
+				oldCost = hpwl + overlap + 1.4*lambda*penaltyRow;
+			}
+			if( !(itCount%(calibMaxIter/5)) || itCount == 1 )
+			{
+				double negAcceptRate = negAcceptCount / itCount;
+				curTemp *= (1-(negAcceptRate - 0.01)/1);
+			}
+
+			generate();
+
+			hpwl -= rb.calcInstHPWL(movables);
+			overlap -= rb.calcInstOverlap(movables);
+			rb.updateCells(movables, newPlace, penaltyRow);
+			newCost = cost();
+
+			accept(newCost, oldCost, curTemp);
+
+			hpwl -= rb.calcInstHPWL(movables);
+			overlap -= rb.calcInstOverlap(movables);
+			rb.updateCells(movables, newPlace, penaltyRow);
+			oldCost = cost();
+		}
+
+		cout<<" ]";
+
+		double negAcceptRate = negAcceptCount / calibMaxIter;
+		double acceptRate = (posAcceptCount + negAcceptCount) / calibMaxIter;
+		cout<<setw(10)<<it
+			<<setw(10)<<curTemp
+			<<"\t"<<setw(10)<<negAcceptRate
+			<<"\t"<<setw(10)<<acceptRate
+			<<"\t"<<setw(10)<<oldCost
+			<<endl;
+	}
 }
 
 void SimAnneal::initPlacement(DataPlace& _rb)
