@@ -24,7 +24,8 @@ typedef element terminal;
 
 struct node: element {
 	row* lRow; // link to row
-	node() : element(), lRow(NULL) {}
+	size_t i;
+	node() : element(), lRow(NULL), i(0) {}
 	bool is_terminal() { return false; }
 };
 
@@ -50,6 +51,12 @@ struct Point
 	row* lRow;
 	Point() : x(0), y(0), lRow(NULL) {}
 	Point(double a, double b, row* r) { x=a; y=b; lRow=r; }
+	Point(node& cell)
+	{
+		x = cell.pos_x;
+		y = cell.pos_y;
+		lRow = cell.lRow;
+	}
 };
 
 class DataPlace
@@ -84,7 +91,11 @@ public:
 	void print_scl(); // вывод строк с их параметрами
 	void print_pl(); // вывод размещений нодов
 
+	bool checkPointInRow(const Point& point);
+	void findCoreRow(Point& point);
+	size_t findCellIdx(Point& point);
 	double findLimitRow();
+
 	double evalHPWL();
 	double calcOverlap(bool det=false);
 	double calcPRow();
@@ -92,7 +103,7 @@ public:
 	double calcInstHPWL(vector<size_t>& movables);
 	double calcInstOverlap(vector<size_t>& movables);
 	void updateCells(const vector<size_t>& movables, const vector<Point>& soln, double& prow);
-	void setLocation(size_t id, const Point& pt, double& prow); //-
+	void setLocation(const size_t id, const Point& pt, double& prow);
 	
 	void remOverlaps(); //Legalization
 	void savePlacement(const char*);

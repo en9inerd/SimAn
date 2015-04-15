@@ -12,10 +12,9 @@ SimAnneal::SimAnneal(DataPlace& rbplace, bool gr, bool det)
 		calibMaxIter(500),
 		oldCost(0), newCost(0),
 		oldPlace(0), newPlace(0),
-		lambda(1)
+		lambda(1), layoutBBox(rb)
 {
 	negAcceptCount = posAcceptCount = 0;
-	BBox layoutBBox(rb);
 	layoutXSize = fabs(layoutBBox.getWidth());
 	layoutYSize = fabs(layoutBBox.getHeight());
 	layoutArea = layoutXSize * layoutYSize;
@@ -31,30 +30,14 @@ SimAnneal::SimAnneal(DataPlace& rbplace, bool gr, bool det)
 
 	initTemp = curTemp = hpwl / rb.NumNets;
 	stopTemp = curTemp/100;
-	unsigned int k = 2;
+	unsigned int k = 1;
 	maxIter = k * rb.NumCells;
 
 	cout << "Initial:\t Temp: " << curTemp << " Iter: " << maxIter 
-		<< " HWPL: " << rb.evalHPWL() << " Over: " << rb.calcOverlap() 
+		<< " HPWL: " << rb.evalHPWL() << " Over: " << rb.calcOverlap() 
 		<< " Cost: " << oldCost << endl;
 
-	double areaPerCell = layoutArea/rb.NumCells;
-	double layoutAR = layoutXSize/layoutYSize;
-	double widthPerCell = sqrt(areaPerCell*layoutAR);
-	double heightPerCell = widthPerCell/layoutAR;
-
-	double minyspan = 2*(rb.rows[1].coord_y-rb.rows[0].coord_y);
-	double minxspan = 5*widthPerCell;
-
-	windowfactor = log10(curTemp/stopTemp)/log10(initTemp/stopTemp);
-	const double scale = 15;
-	xspan = windowfactor*scale*widthPerCell;
-	yspan = windowfactor*scale*heightPerCell;
-
-	if(xspan < minxspan)
-		xspan = minxspan;
-	if(yspan < minyspan)
-		yspan = minyspan;
+	dynamic_window();
 
 	//calibrate();
 
@@ -63,13 +46,25 @@ SimAnneal::SimAnneal(DataPlace& rbplace, bool gr, bool det)
 
 	anneal();
 	rb.checkPRow();
-	//rb.print_nodes();
+	//for(vector<node*>::const_iterator it = rb.rows[0].ls.begin(); it != rb.rows[0].ls.end(); it++)
+	//{
+	//	cout<<(*it)->pos_x<<", ";
+	//}
+	//cout<<endl;
 
 	cout << "Final:\t HWPL: " << rb.evalHPWL() << " Over: " << rb.calcOverlap(true) << endl;
 }
 
 void SimAnneal::anneal()
 {
+	movables.clear();
+	oldPlace.clear();
+	newPlace.clear();
+	hpwl = rb.evalHPWL();
+	overlap = rb.calcOverlap(true);
+	oldCost = cost();
+	lambda = 1;
+
 	cout << "Beginning temperature decline..." << endl;
 	unsigned int j = 0;
 	while (curTemp > stopTemp)
@@ -94,7 +89,7 @@ void SimAnneal::anneal()
 					lambda = 1;
 				else
 					lambda = (avghpwl > avgoverlap)? avghpwl/avgoverlap : 1;
-				oldCost = hpwl + overlap + 1.4*lambda*penaltyRow;
+				oldCost = hpwl + overlap + 1.7*lambda*penaltyRow;
 			}
 			generate();
 
@@ -129,47 +124,119 @@ void SimAnneal::generate()
 
 	size_t randIdx1 = rb.RandomUnsigned(0,rb.NumCells);
 
+	node& randNode1 = rb.nodes[randIdx1];
 	movables.push_back(randIdx1);
-	oldPlace.push_back(Point(rb.nodes[randIdx1].pos_x,rb.nodes[randIdx1].pos_y,rb.nodes[randIdx1].lRow));
+	oldPlace.push_back(Point(randNode1));
 
+	double cellWidth1 = randNode1.w;
+
+	unsigned int directedMove = rb.RandomUnsigned(0,10);
 	unsigned int whichMove = rb.RandomUnsigned(0,5);
 
-	if(whichMove < 4)
+	if(directedMove < 0)
 	{
-		size_t crow = rb.RandomUnsigned(0,rb.NumRows);
-		row& cr = rb.rows[crow];
-		size_t site = rb.RandomUnsigned(0,cr.num_sites);
-		Point randLoc(cr.coord_x+site*cr.site_sp, cr.coord_y, &cr);
-
-		bool foundNode = false;
-		for(vector<node* >::const_iterator it = cr.ls.begin(); it != cr.ls.end(); it++)
+		if(whichMove < 4)
 		{
-			if((*it)->pos_x == randLoc.x)
+			size_t crow = rb.RandomUnsigned(0,rb.NumRows);
+			row& cr = rb.rows[crow];
+			size_t site = rb.RandomUnsigned(0,cr.num_sites);
+			Point randLoc(cr.coord_x+site*cr.site_sp, cr.coord_y, &cr);
+
+			if(rb.checkPointInRow(randLoc) )
 			{
-				foundNode = true;
 				movables.pop_back();
 				oldPlace.pop_back();
-				break;
+			}
+			else
+			{
+				newPlace.push_back(randLoc);
 			}
 		}
-		if(!foundNode) newPlace.push_back(randLoc);
-		//if(!foundNode) cout << "displace: " << randIdx1 << "->" <<  crow << "," << site << endl;
+		else
+		{
+			size_t randIdx2;
+
+			do randIdx2 = rb.RandomUnsigned(0,rb.NumCells);
+			while(randIdx2 == randIdx1);
+
+			movables.push_back(randIdx2);
+			oldPlace.push_back(Point(rb.nodes[randIdx2]));
+
+			newPlace.push_back(Point(rb.nodes[randIdx2]));
+			newPlace.push_back(Point(randNode1));
+		}
 	}
 	else
 	{
-		size_t randIdx2;
+		double rowpitch = rb.rows[1].coord_y - rb.rows[0].coord_y;
+		double sitepitch = randNode1.lRow->site_sp;
+		double ycellcoordoffset = layoutBBox.yMin;
+		double xcellcoordoffset = layoutBBox.xMin;
 
-		do randIdx2 = rb.RandomUnsigned(0,rb.NumCells);
-		while(randIdx2 == randIdx1);
+		Point curLoc = randNode1;
 
-		movables.push_back(randIdx2);
-		oldPlace.push_back(Point(rb.nodes[randIdx2].pos_x,rb.nodes[randIdx2].pos_y,rb.nodes[randIdx2].lRow));
+		if(whichMove < 3)
+		{
+			Point newLoc;
+			double ymin = ((curLoc.y - yspan) <= layoutBBox.yMin) ? layoutBBox.yMin : curLoc.y - yspan;
+			double ymax = ((curLoc.y + yspan) >= layoutBBox.yMax) ? layoutBBox.yMax : curLoc.y + yspan;
+			newLoc.y = rb.RandomDouble(ymin, ymax);
 
-		newPlace.push_back(Point(rb.nodes[randIdx2].pos_x,rb.nodes[randIdx2].pos_y,rb.nodes[randIdx2].lRow));
-		newPlace.push_back(Point(rb.nodes[randIdx1].pos_x,rb.nodes[randIdx1].pos_y,rb.nodes[randIdx1].lRow));
-		//cout << "swap:";
-		//cout << "\t" << randIdx1 << endl;
-		//cout << "\t" << randIdx2 << endl;
+			double xmin = ((curLoc.x - xspan) <= layoutBBox.xMin) ? layoutBBox.xMin : curLoc.x - xspan;
+			double xmax = ((curLoc.x + xspan) >= layoutBBox.xMax) ? layoutBBox.xMax : curLoc.x + xspan;
+			newLoc.x = rb.RandomDouble(xmin, xmax);
+
+			newLoc.x = (floor((newLoc.x - xcellcoordoffset)/sitepitch))*sitepitch + xcellcoordoffset;
+			newLoc.y = (floor((newLoc.y - ycellcoordoffset)/rowpitch))*rowpitch + ycellcoordoffset;
+			if(newLoc.y == layoutBBox.yMax)
+				newLoc.y -= rb.heightSC;
+
+			rb.findCoreRow(newLoc);
+			if(rb.checkPointInRow(newLoc) )
+			{
+				movables.pop_back();
+				oldPlace.pop_back();
+			}
+			else
+			{
+				newPlace.push_back(newLoc);
+			}
+		}
+		else
+		{
+			Point newLoc;
+			double ymin = ((curLoc.y - yspan) <= layoutBBox.yMin) ? layoutBBox.yMin : curLoc.y - yspan;
+			double ymax = ((curLoc.y + yspan) >= layoutBBox.yMax) ? layoutBBox.yMax : curLoc.y + yspan;
+
+			double xmin = ((curLoc.x - xspan) <= layoutBBox.xMin) ? layoutBBox.xMin : curLoc.x - xspan;
+			double xmax = ((curLoc.x + xspan) >= layoutBBox.xMax) ? layoutBBox.xMax : curLoc.x + xspan;
+
+			size_t randIdx2;
+			do
+			{
+				newLoc.y = rb.RandomDouble(ymin, ymax);
+				newLoc.x = rb.RandomDouble(xmin, xmax);
+				newLoc.x = (floor((newLoc.x - xcellcoordoffset)/sitepitch))*sitepitch + xcellcoordoffset;
+				newLoc.y = (floor((newLoc.y - ycellcoordoffset)/rowpitch))*rowpitch + ycellcoordoffset;
+				if(newLoc.y == layoutBBox.yMax)
+					newLoc.y -= rb.heightSC;
+				randIdx2 = rb.findCellIdx(newLoc);
+			}
+			while(randIdx2 == randIdx1);
+
+			if(randIdx2 < rb.NumCells)
+			{
+				movables.push_back(randIdx2);
+				oldPlace.push_back(Point(rb.nodes[randIdx2]));
+
+				newPlace.push_back(Point(rb.nodes[randIdx2]));
+				newPlace.push_back(Point(randNode1));
+			}
+			else
+			{
+				newPlace.push_back(newLoc);
+			}
+		}
 	}
 }
 
@@ -178,7 +245,7 @@ double SimAnneal::cost()
 	hpwl += rb.calcInstHPWL(movables);
 	overlap += rb.calcInstOverlap(movables);
 
-	return(hpwl + overlap + 1.4*lambda*penaltyRow);
+	return(hpwl + overlap + 1.7*lambda*penaltyRow);
 }
 
 bool SimAnneal::accept(double newCost, double oldCost, double curTemp)
@@ -208,6 +275,10 @@ void SimAnneal::update(double& _curTemp)
 		_curTemp *= 0.90;
 	else
 		_curTemp *= 0.96;
+
+	dynamic_window();
+
+	cout<<windowfactor<<" : "<<xspan<<" , "<<yspan<<endl;
 }
 
 void SimAnneal::calibrate()
@@ -249,7 +320,7 @@ void SimAnneal::calibrate()
 					lambda = 1;
 				else
 					lambda = (avghpwl>avgoverlap)?avghpwl/avgoverlap:1;
-				oldCost = hpwl + overlap + 1.4*lambda*penaltyRow;
+				oldCost = hpwl + overlap + 1.7*lambda*penaltyRow;
 			}
 			if( !(itCount%(calibMaxIter/5)) || itCount == 1 )
 			{
@@ -324,6 +395,27 @@ void SimAnneal::initPlacement(DataPlace& _rb)
 			}
 		}
 	}
+}
+
+void SimAnneal::dynamic_window()
+{
+	double areaPerCell = layoutArea/rb.NumCells;
+	double layoutAR = layoutXSize/layoutYSize;
+	double widthPerCell = sqrt(areaPerCell*layoutAR);
+	double heightPerCell = widthPerCell/layoutAR;
+
+	double minyspan = 2*(rb.rows[1].coord_y-rb.rows[0].coord_y);
+	double minxspan = 5*widthPerCell;
+
+	windowfactor = log10(curTemp/stopTemp)/log10(initTemp/stopTemp);
+	const double scale = 150;
+	xspan = windowfactor*scale*widthPerCell;
+	yspan = windowfactor*scale*heightPerCell;
+
+	if(xspan < minxspan)
+		xspan = minxspan;
+	if(yspan < minyspan)
+		yspan = minyspan;
 }
 
 

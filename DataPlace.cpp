@@ -16,12 +16,6 @@ DataPlace::DataPlace() : LengthNodes(0), heightSC(0)
 	srand((unsigned int)time(NULL));
 }
 
-//DataPlace::DataPlace(const char* p_aux)
-//{
-//	parseAuxFile(p_aux);
-//	parser();
-//}
-
 void DataPlace::Start(const char* p_aux)
 {
 	parseAuxFile(p_aux);
@@ -106,6 +100,7 @@ void DataPlace::parseNodes()
 					nd.h = h;
 					//f_nd.seekg(20,ios::cur);
 					nodes.push_back(nd);
+					nd.i = nodes.size()-1;
 					//f_nd.getline(temp,30);
 					LengthNodes += w;
 				}
@@ -175,9 +170,6 @@ void DataPlace::parseNets()
 									break;
 								}
 						}
-
-						//nt.ls_sort_x = nt.ls;
-						//nt.ls_sort_y = nt.ls;
 						f_nt.ignore(50,'\n');
 					}
 					nets.push_back(nt);
@@ -234,7 +226,6 @@ void DataPlace::parseScl()
 void DataPlace::parsePl()
 {
 	cout<<"Parse .pl ... ";
-	//char temp[50];
 	ifstream f_pl(path_pl, ios::in);
 	if(!f_pl)
 	{
@@ -264,7 +255,7 @@ void DataPlace::parsePl()
 					//nodes[j].pos_y = stoi(words[2]);
 					break;
 				}
-				//cout<<words[0]<<endl;
+
 			if(!finded)
 			{
 				for(int j=0; j<NumTerminals; j++)
@@ -272,7 +263,6 @@ void DataPlace::parsePl()
 					{
 						terminals[j].pos_x = stoi(words[1]);
 						terminals[j].pos_y = stoi(words[2]);
-						//cout<<words[0]<<"\t"<<words[1]<<"\t"<<words[2]<<endl;
 						break;
 					}
 			}
@@ -383,6 +373,75 @@ void DataPlace::print_pl()
 	//	cout<<endl;
 }
 
+bool DataPlace::checkPointInRow(const Point& point)		//binary_search//fix
+{
+	//const double& rX = point.x;
+	//vector<node*>::const_iterator fIt = find_if(point.lRow->ls.begin(), point.lRow->ls.end(),
+	//	[rX] (const node* comp) -> bool { return comp->pos_x == rX; });
+	//if(fIt != point.lRow->ls.end() )
+	//	return true;
+	//else
+	//	return false;
+	node nd;
+	nd.pos_x = point.x;
+	return binary_search(point.lRow->ls.begin(), point.lRow->ls.end(), &nd,
+		[] (node* const& comp1, node* const& comp2) 
+		{
+			return (comp1->pos_x < comp2->pos_x);
+		});
+}
+
+void DataPlace::findCoreRow(Point& point)
+{
+	//const double& rY = point.y;
+	//vector<row>::iterator fIt = find_if(rows.begin(), rows.end(),
+	//	[rY] (const row comp) -> bool { return comp.coord_y == rY; });
+
+	vector<row>::iterator fIt = lower_bound(rows.begin(), rows.end(), point.y,
+		[] (row const& comp, double const& rY) { return comp.coord_y < rY; });
+	if(fIt != rows.end() )
+	{
+		if(fIt->coord_y != point.y)
+		{
+			cerr<<"ERROR Row!!!!"<<endl;
+			exit(1);
+		}
+		point.lRow = &(*fIt);
+	}
+	else
+	{
+		cerr<<"function findCoreRow. ERROR!"<<endl;
+		exit(1);
+	}
+}
+
+size_t DataPlace::findCellIdx(Point& point)
+{
+	findCoreRow(point);
+
+	node nd;
+	nd.pos_x = point.x;
+	vector<node*>& l = point.lRow->ls;
+	//for(vector<node*>::const_iterator itN = l.begin(); itN != l.end(); itN++) //better
+	//{
+	//	if(point.x == (*itN)->pos_x)
+	//		return (*itN)->i;
+	//	else if(point.x < (*itN)->pos_x)
+	//		break;
+	//}
+	pair<vector<node*>::iterator, vector<node*>::iterator> fIt = equal_range(l.begin(), l.end(), &nd,
+		[] (node* const& comp1, node* const& comp2) 
+		{ 
+			return (comp1->pos_x < comp2->pos_x);
+		});
+	if(fIt.first != fIt.second)
+	{
+		return (*fIt.first)->i;
+	}
+
+	return UINT_MAX;
+}
+
 double DataPlace::findLimitRow() { return ( LengthNodes / NumRows ); } 
 
 double DataPlace::evalHPWL()
@@ -445,7 +504,7 @@ double DataPlace::calcOverlap(bool det)
 	return totalOverlap;
 }
 
-double DataPlace::calcInstHPWL(vector<size_t>& movables) // вектор movables содержит номера ячеек (1-2) выбранных для перемещения
+double DataPlace::calcInstHPWL(vector<size_t>& movables)
 {
 	unordered_set<size_t> seenNets;
 	if(movables.size() == 2)
@@ -573,10 +632,10 @@ void DataPlace::updateCells(const vector<size_t>& movables, const vector<Point>&
 	}
 }
 
-void DataPlace::setLocation(size_t id, const Point& pt, double& prow)
+void DataPlace::setLocation(const size_t id, const Point& pt, double& prow)
 {
 	vector<node* >& R = nodes[id].lRow->ls;
-	for(vector<node* >::iterator it = R.begin(); it != R.end(); it++)
+	for(vector<node* >::iterator it = R.begin(); it != R.end(); it++)//maybe better
 	{
 		if (nodes[id].name == (*it)->name)
 		{
@@ -592,7 +651,7 @@ void DataPlace::setLocation(size_t id, const Point& pt, double& prow)
 	nodes[id].pos_y = pt.y;
 	nodes[id].lRow = pt.lRow;
 
-	for(vector<node* >::iterator it = pt.lRow->ls.begin(); it != pt.lRow->ls.end(); it++)
+	for(vector<node* >::iterator it = pt.lRow->ls.begin(); it != pt.lRow->ls.end(); it++) //maybe better
 	{
 		if(pt.x <= (*it)->pos_x)
 		{
