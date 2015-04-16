@@ -25,7 +25,7 @@ SimAnneal::SimAnneal(DataPlace& rbplace, bool gr, bool det)
 
 	hpwl = rb.evalHPWL();
 	overlap = rb.calcOverlap();
-	penaltyRow = rb.calcPRow();
+	penaltyRow = rb.evalPRow();
 	oldCost = cost();
 
 	initTemp = curTemp = hpwl / rb.NumNets;
@@ -112,7 +112,7 @@ void SimAnneal::anneal()
 		}
 		update(curTemp);
 		j++;
-		cout << " HPWL: " << rb.evalHPWL() <<":"<<hpwl<< " Over: " << rb.calcOverlap(true) <<":"<<overlap<< " penRow: " << rb.calcPRow() <<":"<<penaltyRow<<endl;
+		cout << " HPWL: " << rb.evalHPWL() <<":"<<hpwl<< " Over: " << rb.calcOverlap(true) <<":"<<overlap<< " penRow: " << rb.evalPRow() <<":"<<penaltyRow<<endl;
 	}
 }
 
@@ -359,7 +359,7 @@ void SimAnneal::calibrate()
 void SimAnneal::initPlacement(DataPlace& _rb)
 {
 	double limitRow = 1.007 * _rb.findLimitRow();
-	double ws = _rb.rows.begin()->site_sp; 
+	double ws = 0; //_rb.rows.begin()->site_sp; 
 	double tab = 15 * ws;   //static_cast<int>( (_rb.rows.begin()->num_sites * _rb.rows.begin()->site_sp - limitRow)/2 );
 	double offset;
 

@@ -373,15 +373,8 @@ void DataPlace::print_pl()
 	//	cout<<endl;
 }
 
-bool DataPlace::checkPointInRow(const Point& point)		//binary_search//fix
+bool DataPlace::checkPointInRow(const Point& point)
 {
-	//const double& rX = point.x;
-	//vector<node*>::const_iterator fIt = find_if(point.lRow->ls.begin(), point.lRow->ls.end(),
-	//	[rX] (const node* comp) -> bool { return comp->pos_x == rX; });
-	//if(fIt != point.lRow->ls.end() )
-	//	return true;
-	//else
-	//	return false;
 	node nd;
 	nd.pos_x = point.x;
 	return binary_search(point.lRow->ls.begin(), point.lRow->ls.end(), &nd,
@@ -393,10 +386,6 @@ bool DataPlace::checkPointInRow(const Point& point)		//binary_search//fix
 
 void DataPlace::findCoreRow(Point& point)
 {
-	//const double& rY = point.y;
-	//vector<row>::iterator fIt = find_if(rows.begin(), rows.end(),
-	//	[rY] (const row comp) -> bool { return comp.coord_y == rY; });
-
 	vector<row>::iterator fIt = lower_bound(rows.begin(), rows.end(), point.y,
 		[] (row const& comp, double const& rY) { return comp.coord_y < rY; });
 	if(fIt != rows.end() )
@@ -419,9 +408,6 @@ size_t DataPlace::findCellIdx(Point& point)
 {
 	findCoreRow(point);
 
-	node nd;
-	nd.pos_x = point.x;
-	vector<node*>& l = point.lRow->ls;
 	//for(vector<node*>::const_iterator itN = l.begin(); itN != l.end(); itN++) //better
 	//{
 	//	if(point.x == (*itN)->pos_x)
@@ -429,11 +415,17 @@ size_t DataPlace::findCellIdx(Point& point)
 	//	else if(point.x < (*itN)->pos_x)
 	//		break;
 	//}
+
+	node nd;
+	nd.pos_x = point.x;
+	vector<node*>& l = point.lRow->ls;
+
 	pair<vector<node*>::iterator, vector<node*>::iterator> fIt = equal_range(l.begin(), l.end(), &nd,
 		[] (node* const& comp1, node* const& comp2) 
 		{ 
 			return (comp1->pos_x < comp2->pos_x);
 		});
+
 	if(fIt.first != fIt.second)
 	{
 		return (*fIt.first)->i;
@@ -602,7 +594,7 @@ double DataPlace::calcInstOverlap(vector<size_t>& movables)
 	return totalOverlap;
 }
 
-double DataPlace::calcPRow()
+double DataPlace::evalPRow()
 {
 	double totalPRow = 0;
 	double limitRow = findLimitRow();
@@ -634,40 +626,79 @@ void DataPlace::updateCells(const vector<size_t>& movables, const vector<Point>&
 
 void DataPlace::setLocation(const size_t id, const Point& pt, double& prow)
 {
-	vector<node* >& R = nodes[id].lRow->ls;
-	for(vector<node* >::iterator it = R.begin(); it != R.end(); it++)//maybe better
+	vector<node* >& eraseCell = nodes[id].lRow->ls;
+	//for(vector<node* >::iterator it = R.begin(); it != R.end(); it++)
+	//{
+	//	if (nodes[id].name == (*it)->name)
+	//	{
+	//		prow -= fabs(nodes[id].lRow->busySRow - findLimitRow());
+	//		nodes[id].lRow->busySRow -= nodes[id].w;
+	//		prow += fabs(nodes[id].lRow->busySRow - findLimitRow());
+	//		R.erase(it);
+	//		break;
+	//	}
+	//}
+	vector<node*>::iterator fIt = upper_bound(eraseCell.begin(), eraseCell.end(), nodes[id].pos_x,
+		[] (double const& rX, node* const& comp) { return rX < comp->pos_x; });
+	if((*(fIt-1))->name == nodes[id].name)
 	{
-		if (nodes[id].name == (*it)->name)
-		{
-			prow -= fabs(nodes[id].lRow->busySRow - findLimitRow());
-			nodes[id].lRow->busySRow -= nodes[id].w;
-			prow += fabs(nodes[id].lRow->busySRow - findLimitRow());
-			R.erase(it);
-			break;
-		}
+		prow -= fabs(nodes[id].lRow->busySRow - findLimitRow());
+		nodes[id].lRow->busySRow -= nodes[id].w;
+		prow += fabs(nodes[id].lRow->busySRow - findLimitRow());
+		eraseCell.erase(fIt-1);
+	}
+	else
+	{
+		cerr<<"function setLocation. ERROR - erase element!"<<endl;
+		exit(1);
 	}
 
 	nodes[id].pos_x = pt.x;
 	nodes[id].pos_y = pt.y;
 	nodes[id].lRow = pt.lRow;
 
-	for(vector<node* >::iterator it = pt.lRow->ls.begin(); it != pt.lRow->ls.end(); it++) //maybe better
+	vector<node* >& insertCell = nodes[id].lRow->ls;
+	//for(vector<node* >::iterator it = pt.lRow->ls.begin(); it != pt.lRow->ls.end(); it++) //maybe better
+	//{
+	//	if(pt.x <= (*it)->pos_x)
+	//	{
+	//		prow -= fabs(nodes[id].lRow->busySRow - findLimitRow());
+	//		nodes[id].lRow->ls.insert(it,&nodes[id]);
+	//		nodes[id].lRow->busySRow += nodes[id].w;
+	//		prow += fabs(nodes[id].lRow->busySRow - findLimitRow());
+	//		break;
+	//	}
+	//	else if ( (it == nodes[id].lRow->ls.end()-1) && (*it)->pos_x <= pt.x )
+	//	{
+	//		prow -= fabs(nodes[id].lRow->busySRow - findLimitRow());
+	//		nodes[id].lRow->ls.insert(nodes[id].lRow->ls.end(),&nodes[id]);
+	//		nodes[id].lRow->busySRow += nodes[id].w;
+	//		prow += fabs(nodes[id].lRow->busySRow - findLimitRow());
+	//		break;
+	//	}
+	//}
+	if( (*(insertCell.end()-1))->pos_x < pt.x)
 	{
-		if(pt.x <= (*it)->pos_x)
+		prow -= fabs(nodes[id].lRow->busySRow - findLimitRow());
+		nodes[id].lRow->busySRow += nodes[id].w;
+		prow += fabs(nodes[id].lRow->busySRow - findLimitRow());
+		insertCell.insert(insertCell.end(),&nodes[id]);
+	}
+	else
+	{
+		vector<node*>::iterator fIt = lower_bound(insertCell.begin(), insertCell.end(), pt.x,
+			[] (node* const& comp, double const& rX) { return comp->pos_x < rX; });
+		if(pt.x <= (*fIt)->pos_x)
 		{
 			prow -= fabs(nodes[id].lRow->busySRow - findLimitRow());
-			nodes[id].lRow->ls.insert(it,&nodes[id]);
 			nodes[id].lRow->busySRow += nodes[id].w;
 			prow += fabs(nodes[id].lRow->busySRow - findLimitRow());
-			break;
+			insertCell.insert(fIt,&nodes[id]);
 		}
-		else if ( (it == nodes[id].lRow->ls.end()-1) && (*it)->pos_x <= pt.x )
+		else
 		{
-			prow -= fabs(nodes[id].lRow->busySRow - findLimitRow());
-			nodes[id].lRow->ls.insert(nodes[id].lRow->ls.end(),&nodes[id]);
-			nodes[id].lRow->busySRow += nodes[id].w;
-			prow += fabs(nodes[id].lRow->busySRow - findLimitRow());
-			break;
+			cerr<<"function setLocation. ERROR - insert element"<<endl;
+			exit(1);
 		}
 	}
 }
