@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 	StringParam	auxFileName		("f",argc,argv);
 	StringParam	outFileName		("save",argc,argv);
 	BoolParam	keepOverlaps	("skipLegal",argc,argv);
-	BoolParam	detailed		("detailed",argc,argv);
+	//BoolParam	detailed		("detailed",argc,argv);
 	BoolParam	greedy			("greedy",argc,argv);
 	//BoolParam	viewer			("viewer",argc,argv);
 
@@ -49,20 +49,28 @@ int main(int argc, char *argv[])
 	//if(!keepOverlaps.found())
 	//	rbplace.remOverlaps();
 
-	double initHPWL = rbplace.evalHPWL();
+	bool detailed = false;
+	double initHPWL = 0;
 
-	cout<<" ====== Launching Global Placement ... "<<endl;
+	if(detailed)
+	{
+		initHPWL = rbplace.evalHPWL();
+		cout<<" ====== Launching Detailed Placement ... "<<endl;
+	}
+	else
+	{
+		cout<<" ====== Launching Global Placement ... "<<endl;
+	}
 	cout<<setprecision(10)<<" Initial Center-to-Center WL: "<<initHPWL<<endl;
 
 	const clock_t start = clock();
-	SimAnneal SA(rbplace, false, false); // (rbplace, gr, detailed)
+	SimAnneal SA(rbplace, false, false); // (rbplace, greedy, detailed)
 	//rbplace.remOverlaps();
 	const double GlobalTime = static_cast<double>(clock() - start) / CLOCKS_PER_SEC;
 
 	double HPWLafter = rbplace.evalHPWL();
 
 	cout<<" Final Center-to-Center WL: "<<HPWLafter<<endl;
-
 	cout<<"  % improvement in HPWL is "<<(initHPWL - HPWLafter)*100/HPWLafter<<endl;
 	cout<<"Time taken = "<<GlobalTime<<" seconds\n";
 
@@ -74,11 +82,11 @@ int main(int argc, char *argv[])
 		opengl_control(argc,argv);
 	}
 
-	//if(outFileName.found())
-	//{
-	//	cout<<"Saving out.pl"<<endl;
-	//	rbplace.savePlacement("out.pl");
-	//}
+	if(outFileName.found())
+	{
+		cout<<"Saving out.pl"<<endl;
+		rbplace.savePlacement("out.pl");
+	}
 
 	return 0;
 }

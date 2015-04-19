@@ -76,8 +76,7 @@ public:
 	vector<net> nets; // вектор связей
 	vector<row> rows; // вектор структур строк с их параметрами
 
-	DataPlace(); //: LengthNodes(0), heightSC(0) {}
-	//DataPlace(const char*);
+	DataPlace();
 	void Start(const char*);
 
 	void parseAuxFile(const char*); //
@@ -94,6 +93,8 @@ public:
 	bool checkPointInRow(const Point& point);
 	void findCoreRow(Point& point);
 	size_t findCellIdx(Point& point);
+	bool findClosestWS(Point& loc, Point& WSLoc, double& width);
+	Point calcMeanLoc(size_t& cellId);
 	double findLimitRow();
 
 	double evalHPWL();

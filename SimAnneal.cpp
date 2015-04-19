@@ -18,28 +18,32 @@ SimAnneal::SimAnneal(DataPlace& rbplace, bool gr, bool det)
 	layoutXSize = fabs(layoutBBox.getWidth());
 	layoutYSize = fabs(layoutBBox.getHeight());
 	layoutArea = layoutXSize * layoutYSize;
-	cout << "Placement area: " << layoutXSize << " x " << layoutYSize << endl;
-	cout << "Num move_cells: " << rb.NumCells << endl;
+	cout<<"Placement area: "<<layoutXSize<<" x "<<layoutYSize<<endl;
+	cout<<"Num move_cells: "<<rb.NumCells<<endl;
 
-	if(!detailed) initPlacement(rb);
+	if(!detailed)
+		initPlacement(rb);
+	else
+		fillingRows(rb);
 
 	hpwl = rb.evalHPWL();
-	overlap = rb.calcOverlap();
+	overlap = rb.calcOverlap(detailed);
 	penaltyRow = rb.evalPRow();
 	oldCost = cost();
 
-	initTemp = curTemp = hpwl / rb.NumNets;
+	initTemp = curTemp = hpwl / rb.NumNets; //initial HPWL per net
 	stopTemp = curTemp/100;
-	unsigned int k = 1;
+	unsigned int k = 1; //specify user
 	maxIter = k * rb.NumCells;
 
-	cout << "Initial:\t Temp: " << curTemp << " Iter: " << maxIter 
-		<< " HPWL: " << rb.evalHPWL() << " Over: " << rb.calcOverlap() 
-		<< " Cost: " << oldCost << endl;
+	cout<<"Initial:\t Temp: "<<curTemp<<" Iter: "<<maxIter 
+		<<" HPWL: "<<rb.evalHPWL()<<" Over: "<<rb.calcOverlap() 
+		<<" Cost: "<<oldCost<<endl;
 
 	dynamic_window();
 
-	//calibrate();
+	//if(!greedy)
+	//	calibrate();
 
 	//initTemp = curTemp;
 	//stopTemp = curTemp/100;
@@ -52,7 +56,7 @@ SimAnneal::SimAnneal(DataPlace& rbplace, bool gr, bool det)
 	//}
 	//cout<<endl;
 
-	cout << "Final:\t HWPL: " << rb.evalHPWL() << " Over: " << rb.calcOverlap(true) << endl;
+	cout<<"Final:\t HWPL: "<<rb.evalHPWL()<<" Over: "<<rb.calcOverlap(true)<<endl;
 }
 
 void SimAnneal::anneal()
@@ -394,6 +398,40 @@ void SimAnneal::initPlacement(DataPlace& _rb)
 				break;
 			}
 		}
+	}
+}
+
+void SimAnneal::fillingRows(DataPlace& _rb)
+{
+	vector<node>& _nd = _rb.nodes;
+	vector<row>& _rw = _rb.rows;
+
+	for(vector<node>::iterator it = rb.nodes.begin(); it != rb.nodes.end(); it++)
+	{
+		vector<row>::iterator fIt = lower_bound(_rw.begin(), _rw.end(), it->pos_y,
+			[] (row const& comp, double const& rY) { return comp.coord_y < rY; });
+		if(fIt != _rw.end() )
+		{
+			if(fIt->coord_y != it->pos_y)
+			{
+				cerr<<"ERROR Row! fillingRows"<<endl;
+				exit(1);
+			}
+			it->lRow = &(*fIt);
+			fIt->ls.push_back(&(*it));
+			fIt->busySRow += it->w;
+		}
+		else
+		{
+			cerr<<"function fillingRows. ERROR!"<<endl;
+			exit(1);
+		}
+	}
+
+	for(vector<row>::iterator itR = _rw.begin(); itR != _rw.end(); itR++)
+	{
+		sort(itR->ls.begin(), itR->ls.end(),
+			[] (node* const& a, node* const& b) { return a->pos_x < b->pos_x; });
 	}
 }
 

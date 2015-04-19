@@ -49,49 +49,11 @@ void draw_scene()
 	vector<terminal>& tr = rbplace.terminals;
 	vector<row>& rw = rbplace.rows;
 
-	//vector<terminal>::iterator termMinY, termMaxY;
-	//vector<terminal>::iterator termMinX, termMaxX;
-	//if(!_tr.empty())
-	//{
-	//	tie(termMinY, termMaxY) = minmax_element(rb.terminals.begin(), rb.terminals.end(),
-	//		[] (terminal const& s1, terminal const& s2)
-	//		{
-	//			return s1.pos_y < s2.pos_y;
-	//		});
-
-	//	tie(termMinX, termMaxX) = minmax_element(rb.terminals.begin(), rb.terminals.end(),
-	//		[] (terminal const& s1, terminal const& s2)
-	//		{
-	//			return s1.pos_x < s2.pos_x;
-	//		});
-	//}
-
-	//double CoreXmin = _rw.begin()->coord_x;
-	//double CoreYmin = _rw.begin()->coord_y;
-	//double CoreXmax = CoreXmin + (_rw.begin()->num_sites) * (_rw.begin()->site_sp);
-	//double CoreYmax = CoreYmin + rb.NumRows * _rw.begin()->h;
-
 	BBox layoutBBox(rbplace, true);
 	double Xmin = layoutBBox.xMin;
 	double Xmax = layoutBBox.xMax;
 	double Ymin = layoutBBox.yMin;
 	double Ymax = layoutBBox.yMax;
-
-
-	//if(!_tr.empty())
-	//{
-	//	Ymin = (termMinY->pos_y > CoreYmin) ? CoreYmin - _rw.begin()->site_sp : termMinY->pos_y;
-	//	Ymax = (termMaxY->pos_y > CoreYmax) ? termMaxY->pos_y + termMaxX->h : CoreYmax + _rw.begin()->site_sp;
-	//	Xmin = (termMinX->pos_x > CoreXmin) ? CoreXmin - _rw.begin()->site_sp : termMinX->pos_x;
-	//	Xmax = (termMaxX->pos_x > CoreXmax) ? termMaxX->pos_x + termMaxX->w : CoreXmax + _rw.begin()->site_sp;
-	//}
-	//else
-	//{
-	//	Ymin = CoreYmin - _rw.begin()->site_sp;
-	//	Xmin = CoreXmin - _rw.begin()->site_sp;
-	//	Ymax = CoreYmax + _rw.begin()->site_sp;
-	//	Xmax = CoreXmax + _rw.begin()->site_sp;
-	//}
 
 	BBox Core(rbplace);
 
@@ -159,83 +121,6 @@ void draw_scene()
 			glVertex2f(it->pos_x/sc, (it->pos_y + it->h)/sc );
 		glEnd();
 	}
-
-	/*double midX = 0.5*abs(DB.area[1][0] - DB.area[0][0])/1e6;
-	double midY = 0.5*abs(DB.area[1][1] - DB.area[0][1])/1e6;
-	glTranslated(-midX, -midY, 0);
-
-	// отрисовка поверхности //
-	glColor3f(0.8, 0.8, 0.8);
-	glBegin(GL_POLYGON);
-		glVertex2f(DB.area[0][0]/1e6, DB.area[0][1]/1e6);
-		glVertex2f(DB.area[0][0]/1e6, DB.area[1][1]/1e6);
-		glVertex2f(DB.area[1][0]/1e6, DB.area[1][1]/1e6);
-		glVertex2f(DB.area[1][0]/1e6, DB.area[0][1]/1e6);
-    glEnd();
-	glLineWidth(2);
-	glColor3f(0, 0, 0);
-	glBegin(GL_LINE_LOOP);
-		glVertex2f(DB.area[0][0]/1e6, DB.area[0][1]/1e6);
-		glVertex2f(DB.area[0][0]/1e6, DB.area[1][1]/1e6);
-		glVertex2f(DB.area[1][0]/1e6, DB.area[1][1]/1e6);
-		glVertex2f(DB.area[1][0]/1e6, DB.area[0][1]/1e6);
-    glEnd();
-
-	// отрисовка препятствий //
-	glColor3f(0.2, 0.2, 0.2);
-	for(int i=0; i<DB.blockage.size(); i++)
-	{
-		glBegin(GL_POLYGON);
-			glVertex2f(DB.blockage[i][0]/1e6, DB.blockage[i][1]/1e6);
-			glVertex2f(DB.blockage[i][0]/1e6, DB.blockage[i][3]/1e6);
-			glVertex2f(DB.blockage[i][2]/1e6, DB.blockage[i][3]/1e6);
-			glVertex2f(DB.blockage[i][2]/1e6, DB.blockage[i][1]/1e6);
-		glEnd();
-	}
-	glColor3f(0, 0, 0);
-	for(int i=0; i<DB.blockage.size(); i++)
-	{
-		glBegin(GL_LINE_LOOP);
-			glVertex2f(DB.blockage[i][0]/1e6, DB.blockage[i][1]/1e6);
-			glVertex2f(DB.blockage[i][0]/1e6, DB.blockage[i][3]/1e6);
-			glVertex2f(DB.blockage[i][2]/1e6, DB.blockage[i][3]/1e6);
-			glVertex2f(DB.blockage[i][2]/1e6, DB.blockage[i][1]/1e6);
-		glEnd();
-	}
-
-	// отрисовка цепей //
-	glLineWidth(1.5);
-	glColor3f(0, 0, 0);
-	if(wire_on)
-	{
-		if(Struct_Tree.get_root() != NULL)
-		{
-			draw_wire(Struct_Tree.get_root());
-			glBegin(GL_LINES);
-				glVertex2f(DB.source_base.x/1e6, DB.source_base.y/1e6);
-				glVertex2f(DB[Struct_Tree.get_root()->info]->x/1e6, DB[Struct_Tree.get_root()->info]->y/1e6);
-			glEnd();
-		}
-	}
-
-	// отрисовка источника //
-	glColor3f(0, 0.5, 1);
-	draw_quads(DB.source_base.x/1e6, DB.source_base.y/1e6, 0.07);
-
-	// отрисовка приемников //
-	glColor3f(1, 0, 0);
-	for(int i=0; i<DB.Ns; i++)
-		draw_cross(DB[i]->x/1e6, DB[i]->y/1e6, 0.05);
-
-	// отрисовка промежуточных точек //
-	if(tap_point_on)
-	{
-		glColor3f(1, 1, 0.1);
-		for(int i=DB.Ns; i<DB.points.size(); i++)
-			draw_quads(DB[i]->x/1e6, DB[i]->y/1e6, 0.03);
-	}
-
-	glTranslated(midX, midY, 0);*/
 }
 
 void render_scene()

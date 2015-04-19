@@ -10,9 +10,6 @@ using namespace std;
 
 DataPlace::DataPlace() : LengthNodes(0), heightSC(0)
 {
-	//const char* path_aux = "ibm_test.aux";
-	//parseAuxFile(path_aux);
-	//parser();
 	srand((unsigned int)time(NULL));
 }
 
@@ -151,7 +148,7 @@ void DataPlace::parseNets()
 						f_nt>>t;
 						bool finded = false;
 
-						for(int j=0; j<(NumNodes-NumTerminals); j++)
+						for(int j=0; j<(NumCells); j++)
 							if(nodes[j].name == t)
 							{
 								finded = true;
@@ -247,12 +244,12 @@ void DataPlace::parsePl()
 		{
 			bool finded = false;
 
-			for(int j=0; j<(NumNodes-NumTerminals); j++)
+			for(int j=0; j<NumCells; j++)
 				if(nodes[j].name == words[0])
 				{
 					finded = true;
-					//nodes[j].pos_x = stoi(words[1]);
-					//nodes[j].pos_y = stoi(words[2]);
+					nodes[j].pos_x = stoi(words[1]);
+					nodes[j].pos_y = stoi(words[2]);
 					break;
 				}
 
@@ -268,32 +265,7 @@ void DataPlace::parsePl()
 			}
 		}
 	}
-		
-	//while(f_pl)
-	//{
-	//	while( f_pl.peek() != ' ' || f_pl.peek() == '#' )
-	//		f_pl.ignore(200, '\n');
-	//	f_pl>>temp;
-	//	for(int i=0; i<NumNodes; i++)
-	//	{
-	//		for(int j=0; j<NumNodes; j++)
-	//			if(nodes[j].name == temp)
-	//			{
-	//				if(nodes[j].move == 0)
-	//				{
-	//					f_pl>>nodes[j].pos_x;
-	//					f_pl>>nodes[j].pos_y;
-	//					f_pl.ignore(100, '\n');
-	//				}
-	//				else
-	//				{
-	//					f_pl.ignore(100, '\n');
-	//				}
-	//				break;
-	//			}
-	//		f_pl>>temp;
-	//	}
-	//}
+
 	f_pl.close();
 }
 
@@ -434,6 +406,16 @@ size_t DataPlace::findCellIdx(Point& point)
 	return UINT_MAX;
 }
 
+bool DataPlace::findClosestWS(Point& loc, Point& WSLoc, double& width)
+{
+	return true;
+}
+
+Point DataPlace::calcMeanLoc(size_t& cellId)
+{
+	return;
+}
+
 double DataPlace::findLimitRow() { return ( LengthNodes / NumRows ); } 
 
 double DataPlace::evalHPWL()
@@ -537,6 +519,35 @@ double DataPlace::calcInstHPWL(vector<size_t>& movables)
 double DataPlace::calcInstOverlap(vector<size_t>& movables)
 {
 	double totalOverlap = 0;
+	double fall = 0;
+
+	//if(movables.size() == 2)
+	//{
+	//	node& N1 = nodes[movables[0]];
+	//	node& N2 = nodes[movables[1]];
+	//	if(N1.lRow == N2.lRow && (N1.pos_x + N1.w > N2.pos_x || N2.pos_x + N2.w > N1.pos_x) )
+	//	{
+	//		vector<node* >::iterator next;
+	//		for(vector<node* >::iterator it = N1.lRow->ls.begin(); it != N1.lRow->ls.end(); it++)
+	//		{
+	//			if(it != N1.lRow->ls.end()-1)
+	//			{
+	//				next = it + 1;
+
+	//				while( ( (*it)->pos_x + (*it)->w ) > (*next)->pos_x )
+	//				{
+	//					if ( ( (*it)->pos_x + (*it)->w ) > ( (*next)->pos_x + (*next)->w ) )
+	//						totalOverlap += (*next)->w * heightSC;
+	//					else
+	//						totalOverlap += fabs( ( (*it)->pos_x + (*it)->w ) - (*next)->pos_x) * heightSC;
+	//					next++;
+	//					if( next == N1.lRow->ls.end() ) break;
+	//				}
+	//			}
+	//		}
+	//		return totalOverlap;
+	//	}
+	//}
 
 	if(movables.size() == 2)
 	{
@@ -544,25 +555,14 @@ double DataPlace::calcInstOverlap(vector<size_t>& movables)
 		node& N2 = nodes[movables[1]];
 		if(N1.lRow == N2.lRow && (N1.pos_x + N1.w > N2.pos_x || N2.pos_x + N2.w > N1.pos_x) )
 		{
-			vector<node* >::iterator next;
-			for(vector<node* >::iterator it = N1.lRow->ls.begin(); it != N1.lRow->ls.end(); it++)
-			{
-				if(it != N1.lRow->ls.end()-1)
-				{
-					next = it + 1;
-
-					while( ( (*it)->pos_x + (*it)->w ) > (*next)->pos_x )
-					{
-						if ( ( (*it)->pos_x + (*it)->w ) > ( (*next)->pos_x + (*next)->w ) )
-							totalOverlap += (*next)->w * heightSC;
-						else
-							totalOverlap += fabs( ( (*it)->pos_x + (*it)->w ) - (*next)->pos_x) * heightSC;
-						next++;
-						if( next == N1.lRow->ls.end() ) break;
-					}
-				}
-			}
-			return totalOverlap;
+			if ((N1.pos_x >= N2.pos_x) && (N1.pos_x + N1.w <= N2.pos_x + N2.w))
+				fall += N1.w * heightSC;
+			else if ((N1.pos_x <= N2.pos_x) && (N1.pos_x + N1.w >= N2.pos_x + N2.w))
+				fall += N2.w * heightSC;
+			else if ((N1.pos_x > N2.pos_x) && (N1.pos_x < N2.pos_x + N2.w))
+				fall += fabs(N2.pos_x + N2.w - N1.pos_x) * heightSC;
+			else if ((N1.pos_x + N1.w > N2.pos_x) && (N1.pos_x + N1.w < N2.pos_x + N2.w))
+				fall += fabs(N1.pos_x + N1.w - N2.pos_x) * heightSC;
 		}
 	}
 
@@ -591,7 +591,7 @@ double DataPlace::calcInstOverlap(vector<size_t>& movables)
 				totalOverlap += fabs(mRightEdge - everyLeftEdge) * heightSC;
 		}
 	}
-	return totalOverlap;
+	return totalOverlap - fall;
 }
 
 double DataPlace::evalPRow()
@@ -725,4 +725,9 @@ double DataPlace::RandomDouble(double min, double max)
 unsigned int DataPlace::RandomUnsigned(unsigned int min, unsigned int max)
 {
 	return (rand() % (max - min)) + min;
+}
+
+void DataPlace::savePlacement(const char*)
+{
+	return;
 }

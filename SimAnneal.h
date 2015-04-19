@@ -48,7 +48,8 @@ private:
 	double posAcceptCount, negAcceptCount, totalCount;
 	size_t itCount;
 
-	void initPlacement(DataPlace& );
+	void initPlacement(DataPlace& _rb);
+	void fillingRows(DataPlace& _rb);
 public:
 	SimAnneal(DataPlace& rbplace, bool gr, bool det);
 };
