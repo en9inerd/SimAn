@@ -13,10 +13,11 @@ struct row;
 
 struct element {
 	string name; //	element name
+	size_t i;
 	double w, h; // element width and height
 	vector<size_t> nets_of_nodes; // element of nets
 	double pos_x, pos_y; // element coordinate
-	element() : pos_x(0), pos_y(0) {}
+	element() : pos_x(0), pos_y(0), i(0) {}
 	virtual bool is_terminal() { return true; }
 };
 
@@ -24,8 +25,7 @@ typedef element terminal;
 
 struct node: element {
 	row* lRow; // link to row
-	size_t i;
-	node() : element(), lRow(NULL), i(0) {}
+	node() : element(), lRow(NULL) {}
 	bool is_terminal() { return false; }
 };
 
@@ -42,7 +42,6 @@ struct row {
 
 struct net {
 	vector<element*> ls;
-	double current_cost;
 };
 
 struct Point
@@ -56,6 +55,12 @@ struct Point
 		x = cell.pos_x;
 		y = cell.pos_y;
 		lRow = cell.lRow;
+	}
+	inline Point& operator += (const Point& right)
+	{
+		this->x += right.x;
+		this->y += right.y;
+		return *this;
 	}
 };
 
@@ -107,7 +112,7 @@ public:
 	void setLocation(const size_t id, const Point& pt, double& prow);
 	
 	void remOverlaps(); //Legalization
-	void savePlacement(const char*);
+	void savePlacement(const char* plFileName) const;
 	
 	double RandomDouble(double min, double max);
 	unsigned int RandomUnsigned(unsigned int num1, unsigned int num2);

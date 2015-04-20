@@ -37,9 +37,9 @@ private:
 	bool greedy, detailed;
 	double hpwl, avghpwl, totalhpwl;
 	double overlap, avgoverlap, totaloverlap;
-	double penaltyRow;
+	double penaltyRow, avgPRow, totalPRow;
 	double oldCost, newCost;
-	double lambda;
+	double lambda, lambdaP;
 
 	vector<size_t> movables;
 	vector<Point> oldPlace;

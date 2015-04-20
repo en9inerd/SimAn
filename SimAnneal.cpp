@@ -12,7 +12,7 @@ SimAnneal::SimAnneal(DataPlace& rbplace, bool gr, bool det)
 		calibMaxIter(500),
 		oldCost(0), newCost(0),
 		oldPlace(0), newPlace(0),
-		lambda(1), layoutBBox(rb)
+		lambda(1), lambdaP(1), layoutBBox(rb)
 {
 	negAcceptCount = posAcceptCount = 0;
 	layoutXSize = fabs(layoutBBox.getWidth());
@@ -64,20 +64,22 @@ void SimAnneal::anneal()
 	movables.clear();
 	oldPlace.clear();
 	newPlace.clear();
+
 	hpwl = rb.evalHPWL();
 	overlap = rb.calcOverlap(true);
+	penaltyRow = rb.evalPRow();
 	oldCost = cost();
 	lambda = 1;
+	lambdaP = 1;
 
 	cout << "Beginning temperature decline..." << endl;
 	unsigned int j = 0;
 	while (curTemp > stopTemp)
 	{
 		negAcceptCount = posAcceptCount = 0;
-		totaloverlap = totalhpwl = 0;
+		totaloverlap = totalhpwl = totalPRow = 0;
 
 		itCount = 0;
-		double avgCost = 0, totalCost = 0;
 
 		cout<<"It#: "<<j<<"\tTemp: "<<curTemp<<endl;
 
@@ -85,15 +87,19 @@ void SimAnneal::anneal()
 		{
 			totalhpwl += hpwl;
 			totaloverlap += overlap;
+			totalPRow += penaltyRow;
 			if (!(itCount%(maxIter/20)))
 			{
 				avghpwl = totalhpwl / itCount;
 				avgoverlap = totaloverlap / itCount;
+				avgPRow = totalPRow / itCount;
 				if (avgoverlap == 0)
 					lambda = 1;
 				else
 					lambda = (avghpwl > avgoverlap)? avghpwl/avgoverlap : 1;
-				oldCost = hpwl + overlap + 1.7*lambda*penaltyRow;
+
+				lambdaP = 4.4 * lambda;
+				oldCost = hpwl + overlap + lambdaP*penaltyRow;
 			}
 			generate();
 
@@ -135,7 +141,7 @@ void SimAnneal::generate()
 	double cellWidth1 = randNode1.w;
 
 	unsigned int directedMove = rb.RandomUnsigned(0,10);
-	unsigned int whichMove = rb.RandomUnsigned(0,5);
+	unsigned int whichMove = rb.RandomUnsigned(0,10);
 
 	if(directedMove < 0)
 	{
@@ -180,6 +186,29 @@ void SimAnneal::generate()
 		Point curLoc = randNode1;
 
 		if(whichMove < 3)
+		{
+			Point optLoc = rb.calcMeanLoc(randIdx1);
+
+			optLoc.x = (floor((optLoc.x - xcellcoordoffset)/sitepitch))*sitepitch + xcellcoordoffset;
+			optLoc.y = (floor((optLoc.y - ycellcoordoffset)/rowpitch))*rowpitch + ycellcoordoffset;
+
+			optLoc.x = (optLoc.x >= layoutBBox.xMax) ? layoutBBox.xMax : optLoc.x;
+			optLoc.x = (optLoc.x <= layoutBBox.xMin) ? layoutBBox.xMin : optLoc.x;
+			optLoc.y = (optLoc.y >= layoutBBox.yMax - rb.heightSC) ? layoutBBox.yMax - rb.heightSC : optLoc.y;
+			optLoc.y = (optLoc.y <= layoutBBox.yMin) ? layoutBBox.yMin : optLoc.y;
+
+			rb.findCoreRow(optLoc);
+			if(rb.checkPointInRow(optLoc))
+			{
+				movables.pop_back();
+				oldPlace.pop_back();
+			}
+			else
+			{
+				newPlace.push_back(optLoc);
+			}
+		}
+		else if(whichMove < 6)
 		{
 			Point newLoc;
 			double ymin = ((curLoc.y - yspan) <= layoutBBox.yMin) ? layoutBBox.yMin : curLoc.y - yspan;
@@ -249,7 +278,7 @@ double SimAnneal::cost()
 	hpwl += rb.calcInstHPWL(movables);
 	overlap += rb.calcInstOverlap(movables);
 
-	return(hpwl + overlap + 1.7*lambda*penaltyRow);
+	return(hpwl + overlap + lambdaP*penaltyRow);
 }
 
 bool SimAnneal::accept(double newCost, double oldCost, double curTemp)
@@ -324,7 +353,7 @@ void SimAnneal::calibrate()
 					lambda = 1;
 				else
 					lambda = (avghpwl>avgoverlap)?avghpwl/avgoverlap:1;
-				oldCost = hpwl + overlap + 1.7*lambda*penaltyRow;
+				oldCost = hpwl + overlap + 3.3*lambda*penaltyRow;
 			}
 			if( !(itCount%(calibMaxIter/5)) || itCount == 1 )
 			{
@@ -446,7 +475,7 @@ void SimAnneal::dynamic_window()
 	double minxspan = 5*widthPerCell;
 
 	windowfactor = log10(curTemp/stopTemp)/log10(initTemp/stopTemp);
-	const double scale = 150;
+	const double scale = 200;
 	xspan = windowfactor*scale*widthPerCell;
 	yspan = windowfactor*scale*heightPerCell;
 

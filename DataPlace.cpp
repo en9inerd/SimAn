@@ -413,7 +413,30 @@ bool DataPlace::findClosestWS(Point& loc, Point& WSLoc, double& width)
 
 Point DataPlace::calcMeanLoc(size_t& cellId)
 {
-	return;
+	size_t pinCount = 0;
+	Point meanLoc;
+
+	vector<size_t>& edge = nodes[cellId].nets_of_nodes;
+	for(vector<size_t>::const_iterator itN = edge.begin(); itN != edge.end(); itN++)
+	{
+		for(vector<element*>::const_iterator itE = nets[*itN].ls.begin(); itE != nets[*itN].ls.end(); itE++)
+		{
+				if(!(*itE)->is_terminal() && (*itE)->i == cellId)
+					continue;
+				meanLoc += Point((*itE)->pos_x, (*itE)->pos_y, NULL);
+				pinCount++;
+		}
+	}
+	if(pinCount == 0)
+	{
+		meanLoc = nodes[cellId];
+	}
+	else
+	{
+		meanLoc.x /= pinCount;
+		meanLoc.y /= pinCount;
+	}
+	return meanLoc;
 }
 
 double DataPlace::findLimitRow() { return ( LengthNodes / NumRows ); } 
@@ -727,7 +750,35 @@ unsigned int DataPlace::RandomUnsigned(unsigned int min, unsigned int max)
 	return (rand() % (max - min)) + min;
 }
 
-void DataPlace::savePlacement(const char*)
+void DataPlace::savePlacement(const char* plFileName) const
 {
-	return;
+	time_t rawtime;
+	struct tm* timeinfo;
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+
+	ofstream out(plFileName);
+
+	out<<"MIET pl 1.0"<<endl;
+	out<<"# Created\t: "<<asctime(timeinfo);
+	out<<"# User\t: Loskutov V"<<endl;
+	out<<"# Platform\t: Windows 7\n\n"<<endl;
+
+	for(vector<node>::const_iterator it = nodes.begin(); it != nodes.end(); it++)
+	{
+		out<<setw(8)<<it->name
+			<<"  "<<setw(10)<<it->pos_x
+			<<"  "<<setw(10)<<it->pos_y<<" : N";
+		out<<endl;
+	}
+
+	for(vector<terminal>::const_iterator it = terminals.begin(); it != terminals.end(); it++)
+	{
+		out<<setw(8)<<it->name
+			<<"  "<<setw(10)<<it->pos_x
+			<<"  "<<setw(10)<<it->pos_y<<" : N";
+		out<<endl;
+	}
+
+	out.close();
 }

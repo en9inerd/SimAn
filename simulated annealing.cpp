@@ -76,16 +76,16 @@ int main(int argc, char *argv[])
 
 	bool viewer = true;
 
+	if(true)
+	{
+		cout<<"ibm_SA_out.pl"<<endl;
+		rbplace.savePlacement("ibm_SA_out.pl");
+	}
+
 	if(viewer)
 	{
 		cout<<"\n\t -<View visualization .pl>-"<<endl;
 		opengl_control(argc,argv);
-	}
-
-	if(outFileName.found())
-	{
-		cout<<"Saving out.pl"<<endl;
-		rbplace.savePlacement("out.pl");
 	}
 
 	return 0;
