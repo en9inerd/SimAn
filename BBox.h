@@ -13,8 +13,8 @@ public:
 
 	BBox(DataPlace& rbplace, bool forViewer=false);
 
-	double  getHeight() const {return abs(yMax - yMin) ; }
-	double  getWidth () const {return abs(xMax - xMin) ; }
+	double  getHeight() const {return fabs(yMax - yMin) ; }
+	double  getWidth () const {return fabs(xMax - xMin) ; }
 
 private:
 	DataPlace &rb;

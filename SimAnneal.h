@@ -37,7 +37,7 @@ private:
 	bool greedy, detailed;
 	double hpwl, avghpwl, totalhpwl;
 	double overlap, avgoverlap, totaloverlap;
-	double penaltyRow, avgPRow, totalPRow;
+	double penaltyRow;
 	double oldCost, newCost;
 	double lambda, lambdaP;
 
