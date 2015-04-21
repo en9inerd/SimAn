@@ -37,7 +37,7 @@ SimAnneal::SimAnneal(DataPlace& rbplace, bool gr, bool det)
 
 	initTemp = curTemp = hpwl / rb.NumNets; //initial HPWL per net
 	stopTemp = curTemp/100;
-	unsigned int k = 1; //specify user
+	k = 0.5; //specify user
 	maxIter = k * rb.NumCells;
 
 	cout<<"Initial:\t Temp: "<<curTemp<<" Iter: "<<maxIter 
@@ -46,12 +46,13 @@ SimAnneal::SimAnneal(DataPlace& rbplace, bool gr, bool det)
 
 	dynamic_window();
 
-	if(!greedy && detailed)
-		calibrate();
+	//if(!greedy && detailed)
+	//	calibrate();
 
 	initTemp = curTemp;
 	stopTemp = curTemp/100;
 
+	detailed = false;
 	anneal();
 	rb.checkPRow();
 	//for(vector<node*>::const_iterator it = rb.rows[0].ls.begin(); it != rb.rows[0].ls.end(); it++)
@@ -100,7 +101,7 @@ void SimAnneal::anneal()
 					lambda = 1;
 				else
 					lambda = (avghpwl > avgoverlap)? avghpwl/avgoverlap : 1;
-				lambdaP = 4.3 * lambda;
+				lambdaP = 2.5 * lambda;
 
 				oldCost = (!detailed) ? (hpwl + overlap + lambdaP*penaltyRow) : (hpwl + lambda*overlap);
 			}
@@ -315,6 +316,9 @@ void SimAnneal::update(double& _curTemp)
 	else
 		_curTemp *= 0.96;
 
+	if(_curTemp < initTemp)
+		maxIter = 2 * rb.NumCells;
+
 	dynamic_window();
 
 	cout<<windowfactor<<" : "<<xspan<<" , "<<yspan<<endl;
@@ -360,7 +364,7 @@ void SimAnneal::calibrate()
 				else
 					lambda = (avghpwl>avgoverlap)?avghpwl/avgoverlap:1;
 
-				lambdaP = 4.3 * lambda;
+				lambdaP = 2.5 * lambda;
 				oldCost = (!detailed) ? (hpwl + overlap + lambdaP*penaltyRow) : (hpwl + lambda*overlap);
 			}
 			if( !(itCount%(calibMaxIter/5)) || itCount == 1 )
@@ -380,7 +384,7 @@ void SimAnneal::calibrate()
 
 			hpwl -= rb.calcInstHPWL(movables);
 			overlap -= rb.calcInstOverlap(movables);
-			rb.updateCells(movables, newPlace, penaltyRow);
+			rb.updateCells(movables, oldPlace, penaltyRow);
 			oldCost = cost();
 		}
 

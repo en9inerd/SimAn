@@ -33,6 +33,7 @@ private:
 	double initTemp;
 	double curTemp;
 	double stopTemp;
+	double k;
 
 	bool greedy, detailed;
 	double hpwl, avghpwl, totalhpwl;

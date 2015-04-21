@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 	//if(!keepOverlaps.found())
 	//	rbplace.remOverlaps();
 
-	bool detailed = false;
+	bool detailed = true;
 	double initHPWL = 0;
 
 	if(detailed)
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 	cout<<setprecision(10)<<" Initial Center-to-Center WL: "<<initHPWL<<endl;
 
 	const clock_t start = clock();
-	SimAnneal SA(rbplace, false, false); // (rbplace, greedy, detailed)
+	SimAnneal SA(rbplace, false, detailed); // (rbplace, greedy, detailed)
 	//rbplace.remOverlaps();
 	const double GlobalTime = static_cast<double>(clock() - start) / CLOCKS_PER_SEC;
 

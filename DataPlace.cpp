@@ -408,7 +408,41 @@ size_t DataPlace::findCellIdx(Point& point)
 
 bool DataPlace::findClosestWS(Point& loc, Point& WSLoc, double& width)
 {
-	return true;
+	findCoreRow(loc);
+
+	vector<node*>::iterator itn, itntemp, itnleft, itnright;
+
+	bool leftRight = false;
+	double WS = 0;
+	double xDiff = 0;
+
+	if(loc.lRow->ls.empty())
+		return(true);
+
+	for(itn = loc.lRow->ls.begin(); itn != loc.lRow->ls.end()-1; ++itn)
+	{
+		xDiff = 1;
+		itntemp = itn++;
+		if((*itn)->pos_x <= loc.x && (*itntemp)->pos_x >= loc.x)
+			break;
+	}
+
+	if(itn != loc.lRow->ls.end()-1)
+		xDiff = (*itntemp)->pos_x - ((*itn)->pos_x + (*itn)->w);
+	else
+		xDiff = (loc.lRow->coord_x + loc.lRow->num_sites * loc.lRow->site_sp) - 
+				((*itn)->pos_x + (*itn)->w);
+	if(xDiff >= width)
+	{
+		WSLoc.x = (*itn)->pos_x + (*itn)->w;
+		return(true);
+	}
+
+	itnleft = itnright = itn;
+
+
+
+	return(false);
 }
 
 Point DataPlace::calcMeanLoc(size_t& cellId)
