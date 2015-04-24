@@ -12,15 +12,18 @@ class SimAnneal
 {
 private: 
 	void generate();
-	void generate_det();
 	void calibrate();
 	double cost();
-	double cost_det();
 	bool accept(double newCost, double oldCost, double curTemp);
 	void dynamic_window();
 	void update(double& curTemp);
+	void update_Lam(double& curTemp);
 	void anneal();
-	void anneal_det();
+
+	size_t I, maxI;
+	size_t updateCount, maxUpdate;
+	size_t acceptCount;
+	double curRate;
 
 	double windowfactor;
 	double xspan, yspan;

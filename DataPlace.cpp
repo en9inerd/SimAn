@@ -349,6 +349,12 @@ bool DataPlace::checkPointInRow(const Point& point)
 {
 	node nd;
 	nd.pos_x = point.x;
+	if(point.lRow->ls.empty())
+	{
+		cout<<"VECTOR EMPTY!!!!"<<endl;
+		return false;
+	}
+
 	return binary_search(point.lRow->ls.begin(), point.lRow->ls.end(), &nd,
 		[] (node* const& comp1, node* const& comp2) 
 		{
@@ -408,15 +414,16 @@ size_t DataPlace::findCellIdx(Point& point)
 
 bool DataPlace::findClosestWS(Point& loc, Point& WSLoc, double& width)
 {
-	findCoreRow(loc);
+	if(loc.lRow == NULL)
+		findCoreRow(loc);
 
 	vector<node*>::iterator itn, itntemp, itnleft, itnright;
 
-	bool leftRight = false;
+	bool leftRight = false; //false means move left else move right
 	double WS = 0;
 	double xDiff = 0;
 
-	if(loc.lRow->ls.empty())
+	if(loc.lRow->ls.empty()) //no cells in row
 		return(true);
 
 	for(itn = loc.lRow->ls.begin(); itn != loc.lRow->ls.end()-1; ++itn)
@@ -438,10 +445,41 @@ bool DataPlace::findClosestWS(Point& loc, Point& WSLoc, double& width)
 		return(true);
 	}
 
+	//closest node found, now try to find WS
+
 	itnleft = itnright = itn;
 
+	while( itnleft != (loc.lRow->ls.begin()) || itnright != (loc.lRow->ls.end()-1) )
+	{
+		//choose the direction of search
+		if(leftRight == false && itnright != loc.lRow->ls.end()-1)
+			leftRight = true;
+		else if(leftRight == true && itnleft != loc.lRow->ls.begin())
+			leftRight = false;
 
-
+		if(leftRight == true) //search right fow WS
+		{
+			itntemp = itnright + 1;
+			WS = (*itntemp)->pos_x - (*itnright)->pos_x - (*itnright)->w;
+			if(WS >= width) //WS found
+			{
+				WSLoc.x = (*itnright)->pos_x + (*itnright)->w;
+				return(true);
+			}
+			++itnright;
+		}
+		else //search left for WS
+		{
+			itntemp = itnleft - 1;
+			WS = (*itnleft)->pos_x - (*itntemp)->pos_x - (*itntemp)->w;
+			if(WS >= width)
+			{
+				WSLoc.x = (*itnleft)->pos_x - width;
+				return(true);
+			}
+			--itnleft;
+		}
+	}
 	return(false);
 }
 
@@ -704,9 +742,11 @@ void DataPlace::setLocation(const size_t id, const Point& pt, double& prow)
 	nodes[id].pos_y = pt.y;
 	nodes[id].lRow = pt.lRow;
 
+	if(pt.lRow->ls.empty()) cout<<"ERROR/ VECTOR EMPTY"<<endl;
+
 	vector<node* >& insertCell = nodes[id].lRow->ls;
 
-	if( (*(insertCell.end()-1))->pos_x < pt.x)
+	if(insertCell.empty() || (*(insertCell.end()-1))->pos_x < pt.x)
 	{
 		prow -= fabs(nodes[id].lRow->busySRow - findLimitRow());
 		nodes[id].lRow->busySRow += nodes[id].w;

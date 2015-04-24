@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 	//if(!keepOverlaps.found())
 	//	rbplace.remOverlaps();
 
-	bool detailed = true;
+	bool detailed = false;
 	double initHPWL = 0;
 
 	if(detailed)
