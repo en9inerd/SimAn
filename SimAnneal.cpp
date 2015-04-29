@@ -27,7 +27,7 @@ SimAnneal::SimAnneal(DataPlace& rbplace, bool gr, bool det)
 	cout<<"Placement area: "<<layoutXSize<<" x "<<layoutYSize<<endl;
 	cout<<"Num move_cells: "<<rb.NumCells<<endl;
 
-	if(detailed)
+	if(!detailed)
 	{
 		initPlacement(rb);
 	}
@@ -41,9 +41,9 @@ SimAnneal::SimAnneal(DataPlace& rbplace, bool gr, bool det)
 	penaltyRow = rb.evalPRow();
 	oldCost = cost();
 
-	initTemp = curTemp = hpwl / rb.NumNets; //initial HPWL per net
+	initTemp = curTemp = (detailed) ? hpwl/rb.NumNets : oldCost; //initial HPWL per net
 	stopTemp = curTemp/100;
-	k = 0.2; //specify user
+	k = 1; //specify user
 	maxIter = k * rb.NumCells;
 
 	cout<<"Initial:\t Temp: "<<curTemp<<" Iter: "<<maxIter 
@@ -59,18 +59,82 @@ SimAnneal::SimAnneal(DataPlace& rbplace, bool gr, bool det)
 	initTemp = curTemp;
 	stopTemp = curTemp/100;
 
-	anneal();
+	if(detailed)
+		anneal_detailed();
+	else
+		anneal_global();
 	rb.checkPRow();
-	//for(vector<node*>::const_iterator it = rb.rows[0].ls.begin(); it != rb.rows[0].ls.end(); it++)
-	//{
-	//	cout<<(*it)->pos_x<<", ";
-	//}
-	//cout<<endl;
 
 	cout<<"Final:\t HPWL: "<<rb.evalHPWL()<<" Over: "<<rb.calcOverlap(true)<<endl;
 }
 
-void SimAnneal::anneal()
+/* For Detailed Placement */
+void SimAnneal::anneal_detailed()
+{
+	movables.clear();
+	oldPlace.clear();
+	newPlace.clear();
+
+	hpwl = rb.evalHPWL();
+	overlap = rb.calcOverlap();
+	penaltyRow = rb.evalPRow();
+	oldCost = cost();
+	lambda = 1;
+
+	cout<<"Beginning temperature decline..."<<endl;
+	unsigned int j = 0;
+
+	while (curTemp > stopTemp)
+	{
+		negAcceptCount = posAcceptCount = 0;
+		totaloverlap = totalhpwl = 0;
+
+		itCount = 0;
+
+		cout<<"It#: "<<j<<"\tTemp: "<<curTemp<<endl;
+
+		while (itCount++ <= maxIter)
+		{
+			totalhpwl += hpwl;
+			totaloverlap += overlap;
+			if (!(itCount%(maxIter/20)))
+			{
+				avghpwl = totalhpwl / itCount;
+				avgoverlap = totaloverlap / itCount;
+				if (avgoverlap == 0)
+					lambda = 1;
+				else
+					lambda = (avghpwl > avgoverlap)? avghpwl/avgoverlap : 1;
+
+				oldCost = hpwl + lambda*overlap;
+			}
+			generate();
+
+			hpwl -= rb.calcInstHPWL(movables);
+			overlap -= rb.calcInstOverlap(movables);
+			rb.updateCells(movables, newPlace, penaltyRow);
+			newCost = cost();
+
+			if (!accept(newCost, oldCost, curTemp))
+			{
+				hpwl -= rb.calcInstHPWL(movables);
+				overlap -= rb.calcInstOverlap(movables);
+				rb.updateCells(movables, oldPlace, penaltyRow);
+				oldCost = cost();
+			}
+			else
+			{
+				oldCost = newCost;
+			}
+		}
+		update(curTemp);
+		j++;
+		cout<<" HPWL: "<<hpwl<<" Over: "<<overlap<<" penRow: "<<penaltyRow<<endl;
+	}
+}
+
+/* For Global Placement */
+void SimAnneal::anneal_global()
 {
 	movables.clear();
 	oldPlace.clear();
@@ -84,36 +148,33 @@ void SimAnneal::anneal()
 	lambdaP = 1;
 
 	cout<<"Beginning temperature decline..."<<endl;
-	unsigned int j = 0;
 
-	while (curTemp > stopTemp)
+	while (I++ < maxI)
 	{
 		acceptCount = 0;
 		totalCount = 0;
 		updateCount = 0;
 
-		//if(I < 0.15*maxI)
-		//	curRate *= exp(log(0.33)/(0.15*maxI));
-		//else if(I < 0.68*maxI)
-		//	curRate = 0.33;
-		//else
-		//	curRate *= exp(log(0.01/0.33)/(0.35*maxI));
+		if(I < 0.15*maxI)
+			curRate *= exp(log(0.44)/(0.15*maxI));
+		else if(I < 0.68*maxI)
+			curRate = 0.44;
+		else
+			curRate *= exp(log(0.01/0.44)/(0.35*maxI));
 
 		negAcceptCount = posAcceptCount = 0;
 		totaloverlap = totalhpwl = 0;
 
 		itCount = 0;
 
-		cout<<"It#: "<<j<<"\tTemp: "<<curTemp<<endl;
-
 		while (itCount++ <= maxIter)
 		{
-			//updateCount++;
-			//if(updateCount == maxUpdate)
-			//{
-			//	updateCount = 0;
-			//	update_Lam(curTemp);
-			//}
+			updateCount++;
+			if(updateCount == maxUpdate)
+			{
+				updateCount = 0;
+				update_Lam(curTemp);
+			}
 
 			totalhpwl += hpwl;
 			totaloverlap += overlap;
@@ -125,9 +186,9 @@ void SimAnneal::anneal()
 					lambda = 1;
 				else
 					lambda = (avghpwl > avgoverlap)? avghpwl/avgoverlap : 1;
-				lambdaP = 1.0 * lambda;
+				lambdaP = 5.3 * lambda;
 
-				oldCost = (!detailed) ? (hpwl + overlap + lambdaP*penaltyRow) : (hpwl + lambda*overlap);
+				oldCost = hpwl + 1.5*overlap + lambdaP*penaltyRow;
 			}
 			generate();
 
@@ -149,10 +210,10 @@ void SimAnneal::anneal()
 				oldCost = newCost;
 			}
 		}
-		update(curTemp);
-		j++;
-		cout<<" HPWL: "<<rb.evalHPWL()<<":"<<hpwl<<" Over: "<<rb.calcOverlap(true)<<":"<<overlap<<" penRow: "<<rb.evalPRow()<<":"<<penaltyRow<<endl;
-		//cout<<"\tCR: "<<curRate<<" AR: "<<acceptCount/totalCount<<endl;
+		dynamic_window();
+		cout<<windowfactor<<" : "<<xspan<<" , "<<yspan<<endl;
+		cout<<"Iter: "<<I<<" HPWL: "<<hpwl<<" Over: "<<overlap<<" penRow: "<<penaltyRow<<endl;
+		cout<<"\tCR: "<<curRate<<" AR: "<<double(acceptCount)/double(itCount)<<endl;
 	}
 }
 
@@ -185,18 +246,18 @@ void SimAnneal::generate()
 			bool check;
 			Point newLoc = randLoc;
 			if(!detailed)
-				check = rb.checkPointInRow(randLoc);
+				check = rb.checkPointInRow(newLoc);
 			else
-				check = rb.findClosestWS(randLoc, newLoc, cellWidth1);
+				check = !rb.findClosestWS(randLoc, newLoc, cellWidth1);
 
-			if(check )
+			if(check)
 			{
 				movables.pop_back();
 				oldPlace.pop_back();
 			}
 			else
 			{
-				newPlace.push_back(randLoc);
+				newPlace.push_back(newLoc);
 			}
 		}
 		else
@@ -234,6 +295,13 @@ void SimAnneal::generate()
 			optLoc.y = (optLoc.y >= layoutBBox.yMax - rb.heightSC) ? layoutBBox.yMax - rb.heightSC : optLoc.y;
 			optLoc.y = (optLoc.y <= layoutBBox.yMin) ? layoutBBox.yMin : optLoc.y;
 
+			bool check;
+			Point newLoc = optLoc;
+			if(!detailed)
+				check = rb.checkPointInRow(newLoc);
+			else
+				check = !rb.findClosestWS(optLoc, newLoc, cellWidth1);
+
 			rb.findCoreRow(optLoc);
 			if(rb.checkPointInRow(optLoc))
 			{
@@ -242,7 +310,7 @@ void SimAnneal::generate()
 			}
 			else
 			{
-				newPlace.push_back(optLoc);
+				newPlace.push_back(newLoc);
 			}
 		}
 		else if(whichMove < 6)
@@ -261,6 +329,13 @@ void SimAnneal::generate()
 			if(newLoc.y == layoutBBox.yMax)
 				newLoc.y -= rb.heightSC;
 
+			bool check;
+			Point Loc = newLoc;
+			if(!detailed)
+				check = rb.checkPointInRow(Loc);
+			else
+				check = !rb.findClosestWS(newLoc, Loc, cellWidth1);
+
 			rb.findCoreRow(newLoc);
 			if(rb.checkPointInRow(newLoc) )
 			{
@@ -269,7 +344,7 @@ void SimAnneal::generate()
 			}
 			else
 			{
-				newPlace.push_back(newLoc);
+				newPlace.push_back(Loc);
 			}
 		}
 		else
@@ -315,7 +390,7 @@ double SimAnneal::cost()
 	hpwl += rb.calcInstHPWL(movables);
 	overlap += rb.calcInstOverlap(movables);
 
-	return((!detailed) ? (hpwl + overlap + lambdaP*penaltyRow) : (hpwl + lambda*overlap));
+	return((!detailed) ? (hpwl + 1.5*overlap + lambdaP*penaltyRow) : (hpwl + lambda*overlap));
 }
 
 bool SimAnneal::accept(double newCost, double oldCost, double curTemp)
@@ -349,7 +424,7 @@ void SimAnneal::update(double& _curTemp)
 	else
 		_curTemp *= 0.96;
 
-	if(curRate < initTemp)
+	if(curRate < initTemp && detailed)
 		maxIter = 2 * rb.NumCells;
 
 	dynamic_window();
@@ -404,8 +479,7 @@ void SimAnneal::calibrate()
 				else
 					lambda = (avghpwl>avgoverlap)?avghpwl/avgoverlap:1;
 
-				lambdaP = 4.3 * lambda;
-				oldCost = (!detailed) ? (hpwl + overlap + lambdaP*penaltyRow) : (hpwl + lambda*overlap);
+				oldCost = hpwl + lambda*overlap;
 			}
 			if( !(itCount%(calibMaxIter/5)) || itCount == 1 )
 			{
@@ -433,7 +507,7 @@ void SimAnneal::calibrate()
 		double negAcceptRate = negAcceptCount / calibMaxIter;
 		double acceptRate = (posAcceptCount + negAcceptCount) / calibMaxIter;
 		cout<<setw(10)<<it
-			<<"\t"<<setw(10)<<curTemp
+			<<setw(10)<<curTemp
 			<<"\t"<<setw(10)<<negAcceptRate
 			<<"\t"<<setw(10)<<acceptRate
 			<<"\t"<<setw(10)<<oldCost
@@ -526,8 +600,21 @@ void SimAnneal::dynamic_window()
 	double minyspan = 2*(rb.rows[1].coord_y-rb.rows[0].coord_y);
 	double minxspan = 5*widthPerCell;
 
-	windowfactor = log10(curTemp/stopTemp)/log10(initTemp/stopTemp);
-	const double scale = (!detailed) ? 20 : 15;
+	if(detailed)
+	{
+		windowfactor = log10(curTemp/stopTemp)/log10(initTemp/stopTemp);
+	}
+	else
+	{
+		if(I < 23)
+			windowfactor = 1;
+		else if(I <= 97)
+			windowfactor = exp(-1.5*(I-22)/75);
+		else
+			windowfactor = exp(-5.5);
+	}
+
+	const double scale = (!detailed) ? 70 : 15;
 	xspan = windowfactor*scale*widthPerCell;
 	yspan = windowfactor*scale*heightPerCell;
 

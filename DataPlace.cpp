@@ -416,32 +416,55 @@ bool DataPlace::findClosestWS(Point& loc, Point& WSLoc, double& width)
 {
 	if(loc.lRow == NULL)
 		findCoreRow(loc);
+	WSLoc.lRow = loc.lRow;
 
+	node nd;
+	nd.pos_x = loc.x;
+	vector<node*>& l = loc.lRow->ls;
 	vector<node*>::iterator itn, itntemp, itnleft, itnright;
 
 	bool leftRight = false; //false means move left else move right
-	double WS = 0;
-	double xDiff = 0;
+	double WS, xDiff;
 
-	if(loc.lRow->ls.empty()) //no cells in row
+	if(l.empty()) //no cells in row
 		return(true);
 
-	for(itn = loc.lRow->ls.begin(); itn != loc.lRow->ls.end()-1; ++itn)
+	pair<vector<node*>::iterator, vector<node*>::iterator> fIt = equal_range(l.begin(), l.end(), &nd,
+	[] (node* const& comp1, node* const& comp2) 
+	{ 
+		return (comp1->pos_x < comp2->pos_x);
+	});
+
+	if(fIt.second == l.begin())
 	{
-		xDiff = 1;
-		itntemp = itn++;
-		if((*itn)->pos_x <= loc.x && (*itntemp)->pos_x >= loc.x)
-			break;
+		itn = fIt.first;
+		xDiff = (*itn)->pos_x - loc.lRow->coord_x;
+	}
+	else if(fIt.first == fIt.second)
+	{
+		itn = fIt.second-1;
+		if(fIt.first == l.end())
+			xDiff = (loc.lRow->coord_x + loc.lRow->num_sites*loc.lRow->site_sp) - 
+					((*itn)->pos_x + (*itn)->w);
+		else
+			xDiff = (*fIt.second)->pos_x - ((*itn)->pos_x + (*itn)->w);
+	}
+	else
+	{
+		itn = fIt.first;
+		if(fIt.second == l.end())
+			xDiff = (loc.lRow->coord_x + loc.lRow->num_sites*loc.lRow->site_sp) - 
+					((*itn)->pos_x + (*itn)->w);
+		else
+			xDiff = (*fIt.second)->pos_x - ((*itn)->pos_x + (*itn)->w);
 	}
 
-	if(itn != loc.lRow->ls.end()-1)
-		xDiff = (*itntemp)->pos_x - ((*itn)->pos_x + (*itn)->w);
-	else
-		xDiff = (loc.lRow->coord_x + loc.lRow->num_sites * loc.lRow->site_sp) - 
-				((*itn)->pos_x + (*itn)->w);
 	if(xDiff >= width)
 	{
-		WSLoc.x = (*itn)->pos_x + (*itn)->w;
+		if(fIt.second == l.begin())
+			WSLoc.x = loc.lRow->coord_x;
+		else
+			WSLoc.x = (*itn)->pos_x + (*itn)->w;
 		return(true);
 	}
 
@@ -472,7 +495,7 @@ bool DataPlace::findClosestWS(Point& loc, Point& WSLoc, double& width)
 		{
 			itntemp = itnleft - 1;
 			WS = (*itnleft)->pos_x - (*itntemp)->pos_x - (*itntemp)->w;
-			if(WS >= width)
+			if(WS >= width) //WS found
 			{
 				WSLoc.x = (*itnleft)->pos_x - width;
 				return(true);
@@ -805,7 +828,7 @@ void DataPlace::savePlacement(const char* plFileName) const
 
 	ofstream out(plFileName);
 
-	out<<"MIET pl 1.0"<<endl;
+	out<<"UCLA pl 1.0"<<endl;
 	out<<"# Created\t: "<<asctime(timeinfo);
 	out<<"# User\t: Loskutov V"<<endl;
 	out<<"# Platform\t: Windows 7\n\n"<<endl;

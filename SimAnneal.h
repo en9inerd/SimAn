@@ -18,7 +18,8 @@ private:
 	void dynamic_window();
 	void update(double& curTemp);
 	void update_Lam(double& curTemp);
-	void anneal();
+	void anneal_detailed();
+	void anneal_global();
 
 	size_t I, maxI;
 	size_t updateCount, maxUpdate;
