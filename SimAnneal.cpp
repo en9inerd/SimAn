@@ -186,7 +186,7 @@ void SimAnneal::anneal_global()
 					lambda = 1;
 				else
 					lambda = (avghpwl > avgoverlap)? avghpwl/avgoverlap : 1;
-				lambdaP = 5.3 * lambda;
+				lambdaP = 5.0 * lambda;
 
 				oldCost = hpwl + 1.5*overlap + lambdaP*penaltyRow;
 			}
@@ -298,12 +298,14 @@ void SimAnneal::generate()
 			bool check;
 			Point newLoc = optLoc;
 			if(!detailed)
+			{
+				rb.findCoreRow(newLoc);
 				check = rb.checkPointInRow(newLoc);
+			}
 			else
 				check = !rb.findClosestWS(optLoc, newLoc, cellWidth1);
 
-			rb.findCoreRow(optLoc);
-			if(rb.checkPointInRow(optLoc))
+			if(check)
 			{
 				movables.pop_back();
 				oldPlace.pop_back();
@@ -332,7 +334,10 @@ void SimAnneal::generate()
 			bool check;
 			Point Loc = newLoc;
 			if(!detailed)
+			{
+				rb.findCoreRow(Loc);
 				check = rb.checkPointInRow(Loc);
+			}
 			else
 				check = !rb.findClosestWS(newLoc, Loc, cellWidth1);
 
@@ -434,6 +439,7 @@ void SimAnneal::update(double& _curTemp)
 
 void SimAnneal::update_Lam(double& _curTemp)
 {
+	totalCount = itCount;
 	double acceptRate = double(acceptCount)/totalCount;
 	double change = (1 - (acceptRate - curRate)/3);
 	_curTemp *= change;
@@ -442,7 +448,7 @@ void SimAnneal::update_Lam(double& _curTemp)
 void SimAnneal::calibrate()
 {
 	cout<<"Performing a warm-up run to calibrate acceptance rates..."<<endl;
-	cout<<setw(10)<<"Iter"
+	cout<<"\t"<<setw(10)<<"Iter"
 		<<setw(10)<<"\tTemp"
 		<<setw(10)<<"\tNAR"
 		<<setw(10)<<"\tAR"
@@ -614,7 +620,7 @@ void SimAnneal::dynamic_window()
 			windowfactor = exp(-5.5);
 	}
 
-	const double scale = (!detailed) ? 70 : 15;
+	const double scale = (!detailed) ? 150 : 15;
 	xspan = windowfactor*scale*widthPerCell;
 	yspan = windowfactor*scale*heightPerCell;
 
