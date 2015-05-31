@@ -186,7 +186,7 @@ void SimAnneal::anneal_global()
 					lambda = 1;
 				else
 					lambda = (avghpwl > avgoverlap)? avghpwl/avgoverlap : 1;
-				lambdaP = 5.0 * lambda;
+				lambdaP = 6.1 * lambda;
 
 				oldCost = hpwl + 1.5*overlap + lambdaP*penaltyRow;
 			}
@@ -283,7 +283,7 @@ void SimAnneal::generate()
 
 		Point curLoc = randNode1;
 
-		if(whichMove < 3)
+		if(whichMove < 4)
 		{
 			Point optLoc = rb.calcMeanLoc(randIdx1);
 
@@ -292,7 +292,7 @@ void SimAnneal::generate()
 
 			optLoc.x = (optLoc.x >= layoutBBox.xMax) ? layoutBBox.xMax : optLoc.x;
 			optLoc.x = (optLoc.x <= layoutBBox.xMin) ? layoutBBox.xMin : optLoc.x;
-			optLoc.y = (optLoc.y >= layoutBBox.yMax - rb.heightSC) ? layoutBBox.yMax - rb.heightSC : optLoc.y;
+			optLoc.y = (optLoc.y >= layoutBBox.yMax) ? layoutBBox.yMax - rb.heightSC : optLoc.y;
 			optLoc.y = (optLoc.y <= layoutBBox.yMin) ? layoutBBox.yMin : optLoc.y;
 
 			bool check;
@@ -303,7 +303,9 @@ void SimAnneal::generate()
 				check = rb.checkPointInRow(newLoc);
 			}
 			else
+			{
 				check = !rb.findClosestWS(optLoc, newLoc, cellWidth1);
+			}
 
 			if(check)
 			{
@@ -315,7 +317,7 @@ void SimAnneal::generate()
 				newPlace.push_back(newLoc);
 			}
 		}
-		else if(whichMove < 6)
+		else if(whichMove < 8)
 		{
 			Point newLoc;
 			double ymin = ((curLoc.y - yspan) <= layoutBBox.yMin) ? layoutBBox.yMin : curLoc.y - yspan;
@@ -339,10 +341,11 @@ void SimAnneal::generate()
 				check = rb.checkPointInRow(Loc);
 			}
 			else
+			{
 				check = !rb.findClosestWS(newLoc, Loc, cellWidth1);
+			}
 
-			rb.findCoreRow(newLoc);
-			if(rb.checkPointInRow(newLoc) )
+			if(check)
 			{
 				movables.pop_back();
 				oldPlace.pop_back();
