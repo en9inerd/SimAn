@@ -9,9 +9,9 @@ int Rotate = 0, origx = 0, origy = 0, angle = 0;
 
 void draw_circle(double x, double y, double r)
 {
-	const int t = 50; // на сколько частей делится окружность
+	const int t = 50; // РЅР° СЃРєРѕР»СЊРєРѕ С‡Р°СЃС‚РµР№ РґРµР»РёС‚СЃСЏ РѕРєСЂСѓР¶РЅРѕСЃС‚СЊ
 	glBegin(GL_TRIANGLE_FAN);
-        glVertex2f( x, y ); //центр окружности
+        glVertex2f( x, y ); //С†РµРЅС‚СЂ РѕРєСЂСѓР¶РЅРѕСЃС‚Рё
         for(int i = 0; i <= t; i++ ) 
 		{
             float a = (float)i / (float)t * 3.1415f * 2.0f;
@@ -148,19 +148,19 @@ void render_scene()
 
 void keyboard_control(unsigned char key, int, int)
 {
-	// поворот по часовой стрелке //
+	// РїРѕРІРѕСЂРѕС‚ РїРѕ С‡Р°СЃРѕРІРѕР№ СЃС‚СЂРµР»РєРµ //
 	if(key=='a')
 	{
 		angle-=10;
 		glutPostRedisplay();
 	}
-	// поворот против часовой стрелки //
+	// РїРѕРІРѕСЂРѕС‚ РїСЂРѕС‚РёРІ С‡Р°СЃРѕРІРѕР№ СЃС‚СЂРµР»РєРё //
     if(key=='s')
 	{
 		angle+=10;
 		glutPostRedisplay();
 	}
-	// вернуться к исходному виду //
+	// РІРµСЂРЅСѓС‚СЊСЃСЏ Рє РёСЃС…РѕРґРЅРѕРјСѓ РІРёРґСѓ //
 	if(key=='r')
 	{
 		angle=0;
@@ -168,13 +168,13 @@ void keyboard_control(unsigned char key, int, int)
 		moving_x = moving_y = 0;
 		glutPostRedisplay();
 	}
-	// приблизить //
+	// РїСЂРёР±Р»РёР·РёС‚СЊ //
     if(key=='+')
 	{
 		zoom+=1;
 		glutPostRedisplay();
 	}
-	// отдалить //
+	// РѕС‚РґР°Р»РёС‚СЊ //
     if(key=='-')
 	{
 		zoom-=1;

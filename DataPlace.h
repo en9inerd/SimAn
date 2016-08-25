@@ -73,13 +73,13 @@ public:
 	unsigned NumRows;
 	unsigned NumNets;
 	unsigned NumPins;
-	double LengthNodes; //сумма длин ячеек
+	double LengthNodes; //СЃСѓРјРјР° РґР»РёРЅ В¤С‡РµРµРє
 	unsigned heightSC; // heightRow = heightNodes
 	char *path_nodes, *path_nets, *path_scl, *path_pl;
-	vector<node> nodes; // вектор, содержащий структуры node
-	vector<terminal> terminals; // терминалы
-	vector<net> nets; // вектор связей
-	vector<row> rows; // вектор структур строк с их параметрами
+	vector<node> nodes; // РІРµРєС‚РѕСЂ, СЃРѕРґРµСЂР¶Р°С‰РёР№ СЃС‚СЂСѓРєС‚СѓСЂС‹ node
+	vector<terminal> terminals; // С‚РµСЂРјРёРЅР°Р»С‹
+	vector<net> nets; // РІРµРєС‚РѕСЂ СЃРІВ¤Р·РµР№
+	vector<row> rows; // РІРµРєС‚РѕСЂ СЃС‚СЂСѓРєС‚СѓСЂ СЃС‚СЂРѕРє СЃ РёС… РїР°СЂР°РјРµС‚СЂР°РјРё
 
 	DataPlace();
 	void Start(const char*);
@@ -89,11 +89,11 @@ public:
 	void parseNets(); //
 	void parseScl(); //
 	void parsePl(); //
-	void parser(); // считывает данные из файлов .nodes, .nets, .scl, .pl
-	void print_nodes(); // выводит на экран все вершины
-	void print_nets(); // выводит на экран все связи
-	void print_scl(); // вывод строк с их параметрами
-	void print_pl(); // вывод размещений нодов
+	void parser(); // СЃС‡РёС‚С‹РІР°РµС‚ РґР°РЅРЅС‹Рµ РёР· С„Р°Р№Р»РѕРІ .nodes, .nets, .scl, .pl
+	void print_nodes(); // РІС‹РІРѕРґРёС‚ РЅР° СЌРєСЂР°РЅ РІСЃРµ РІРµСЂС€РёРЅС‹
+	void print_nets(); // РІС‹РІРѕРґРёС‚ РЅР° СЌРєСЂР°РЅ РІСЃРµ СЃРІВ¤Р·Рё
+	void print_scl(); // РІС‹РІРѕРґ СЃС‚СЂРѕРє СЃ РёС… РїР°СЂР°РјРµС‚СЂР°РјРё
+	void print_pl(); // РІС‹РІРѕРґ СЂР°Р·РјРµС‰РµРЅРёР№ РЅРѕРґРѕРІ
 
 	bool checkPointInRow(const Point& point);
 	void findCoreRow(Point& point);

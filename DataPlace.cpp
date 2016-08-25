@@ -31,7 +31,7 @@ void DataPlace::parseAuxFile(const char* p_aux)
 	ifstream f_aux(p_aux, ios::in);
 	if(!f_aux)
 	{
-		cerr<<"Îøèáêà ÷òåíèÿ ôàéëà .aux"<<endl;
+		cerr<<"ÐžÑˆÐ¸Ð±ÐºÐ° Ñ‡Ñ‚ÐµÐ½Ð¸Ñ Ñ„Ð°Ð¹Ð»Ð° .aux"<<endl;
 		system("pause");
 		exit(1);
 	}
@@ -54,7 +54,7 @@ void DataPlace::parseNodes()
 	ifstream f_nd(path_nodes, ios::in);
 	if(!f_nd)
 	{
-		cerr<<"Îøèáêà ÷òåíèÿ ôàéëà .nodes"<<endl;
+		cerr<<"ÐžÑˆÐ¸Ð±ÐºÐ° Ñ‡Ñ‚ÐµÐ½Ð¸Ñ Ñ„Ð°Ð¹Ð»Ð° .nodes"<<endl;
 		system("pause");
 		exit(1);
 	}
@@ -117,7 +117,7 @@ void DataPlace::parseNets()
 	ifstream f_nt(path_nets, ios::in);
 	if(!f_nt)
 	{
-		cerr<<"Îøèáêà ÷òåíèÿ ôàéëà .nets"<<endl;
+		cerr<<"ÐžÑˆÐ¸Ð±ÐºÐ° Ñ‡Ñ‚ÐµÐ½Ð¸Ñ Ñ„Ð°Ð¹Ð»Ð° .nets"<<endl;
 		system("pause");
 		exit(1);
 	}
@@ -184,7 +184,7 @@ void DataPlace::parseScl()
 	ifstream f_scl(path_scl, ios::in);
 	if(!f_scl)
 	{
-		cerr<<"Îøèáêà ÷òåíèÿ ôàéëà .scl"<<endl;
+		cerr<<"ÐžÑˆÐ¸Ð±ÐºÐ° Ñ‡Ñ‚ÐµÐ½Ð¸Ñ Ñ„Ð°Ð¹Ð»Ð° .scl"<<endl;
 		system("pause");
 		exit(1);
 	}
@@ -226,7 +226,7 @@ void DataPlace::parsePl()
 	ifstream f_pl(path_pl, ios::in);
 	if(!f_pl)
 	{
-		cerr<<"Îøèáêà ÷òåíèÿ ôàéëà .pl"<<endl;
+		cerr<<"ÐžÑˆÐ¸Ð±ÐºÐ° Ñ‡Ñ‚ÐµÐ½Ð¸Ñ Ñ„Ð°Ð¹Ð»Ð° .pl"<<endl;
 		system("pause");
 		exit(1);
 	}
@@ -283,10 +283,10 @@ void DataPlace::parser()
 
 void DataPlace::print_nodes()
 {
-	cout<<"Ñïèñîê íîäîâ:"<<endl;
+	cout<<"Ð¡Ð¿Ð¸ÑÐ¾Ðº Ð½Ð¾Ð´Ð¾Ð²:"<<endl;
 	for(int i=0; i<(NumNodes-NumTerminals); i++)
 	{
-		cout<<"Íîä "<<nodes[i].name<<": íîìåðà ñâÿçåé [";
+		cout<<"ÐÐ¾Ð´ "<<nodes[i].name<<": Ð½Ð¾Ð¼ÐµÑ€Ð° ÑÐ²ÑÐ·ÐµÐ¹ [";
 		for(int j=0; j<nodes[i].nets_of_nodes.size(); j++)
 			cout<<" "<<nodes[i].nets_of_nodes[j]+1;
 		cout<<" ]"<<endl;
@@ -294,16 +294,16 @@ void DataPlace::print_nodes()
 	cout<<endl;
     for(int i=0; i<NumTerminals; i++)
 	{
-		cout<<"Òåðìèíàë "<<terminals[i].name<<endl;
+		cout<<"Ð¢ÐµÑ€Ð¼Ð¸Ð½Ð°Ð» "<<terminals[i].name<<endl;
 	}
 }
 
 void DataPlace::print_nets()
 {
-	cout<<"Ñïèñîê öåïåé:"<<endl;
+	cout<<"Ð¡Ð¿Ð¸ÑÐ¾Ðº Ñ†ÐµÐ¿ÐµÐ¹:"<<endl;
 	for(int i=0; i<NumNets; i++)
 	{
-		cout<<"Öåïü "<<i+1<<": {";
+		cout<<"Ð¦ÐµÐ¿ÑŒ "<<i+1<<": {";
 		for(int j=0; j<nets[i].ls.size(); j++)
 			cout<<" "<<nets[i].ls[j]->name;
 		cout<<" }"<<endl;
@@ -313,7 +313,7 @@ void DataPlace::print_nets()
 
 void DataPlace::print_scl()
 {
-	cout<<"Ñïèñîê ñòðîê:"<<endl;
+	cout<<"Ð¡Ð¿Ð¸ÑÐ¾Ðº ÑÑ‚Ñ€Ð¾Ðº:"<<endl;
 	for(int i=0; i<NumRows; i++)
 	{
 		cout<<"Row "<<i+1<<endl;
@@ -328,7 +328,7 @@ void DataPlace::print_scl()
 
 void DataPlace::print_pl()
 {
-	cout<<"Ñïèñîê êîîðäèíàò íîäîâ:"<<endl;
+	cout<<"Ð¡Ð¿Ð¸ÑÐ¾Ðº ÐºÐ¾Ð¾Ñ€Ð´Ð¸Ð½Ð°Ñ‚ Ð½Ð¾Ð´Ð¾Ð²:"<<endl;
 
 	for(int i=0; i<NumNodes-NumTerminals; i++)
 	{
