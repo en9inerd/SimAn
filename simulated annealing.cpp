@@ -28,23 +28,23 @@ int main(int argc, char* argv[]) {
     BoolParam greedy("greedy", argc, argv);
     // BoolParam	viewer			("viewer",argc,argv);
 
-    // if (noParams.found() || helpRequest.found() || helpRequest1.found())
-    //{
-    //	cout<<"  Use '-help' or '-f filename.aux' "<<endl;
-    //	cout<<"Options\n"
-    //		<<"-save filename.pl\n"
-    //		<<"-detailed (detailed placement, default global)\n"
-    //		<<"-greedy (no annealing, just greedy moves)\n\n ";
-    //	exit(0);
-    //}
+    if (noParams.found() || helpRequest.found() || helpRequest1.found())
+    {
+    	cout<<"  Use '-help' or '-f filename.aux' "<<endl;
+    	cout<<"Options\n"
+    		<<"-save filename.pl\n"
+    		<<"-detailed (detailed placement, default global)\n"
+    		<<"-greedy (no annealing, just greedy moves)\n\n ";
+    	exit(0);
+    }
 
     const char* aux = "ibm_test.aux";
     rbplace.Start(aux);
 
-    // rbplace.Start(auxFileName);
+    rbplace.Start(auxFileName);
 
-    // if(!keepOverlaps.found())
-    //	rbplace.remOverlaps();
+    if(!keepOverlaps.found())
+    	rbplace.remOverlaps();
 
     bool detailed = false;
     double initHPWL = 0;
