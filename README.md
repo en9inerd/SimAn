@@ -75,9 +75,7 @@ The program was designed to work with **IBM-PLACE Benchmarks**:
 
 This code has been ported from Windows (VS2013-VS2015) to macOS/Linux
 
-## References
-
-- [IBM-PLACE Benchmarks]: http://vlsicad.eecs.umich.edu/BK/Slots/cache/er.cs.ucla.edu/benchmarks/ibm-place/
-- [UMpack]: http://vlsicad.eecs.umich.edu/BK/PDtools/tar.gz/LATEST/UMpack-45-120708.tar.gz
-- [UCLApack]: ./UCLApack-43-040113.tar.gz_
-- [TimberWolf]: https://github.com/rubund/graywolf/blob/master/README.md
+[IBM-PLACE Benchmarks]: http://vlsicad.eecs.umich.edu/BK/Slots/cache/er.cs.ucla.edu/benchmarks/ibm-place/
+[UMpack]: http://vlsicad.eecs.umich.edu/BK/PDtools/tar.gz/LATEST/UMpack-45-120708.tar.gz
+[UCLApack]: ./UCLApack-43-040113.tar.gz_
+[TimberWolf]: https://github.com/rubund/graywolf/blob/master/README.md
