@@ -5,7 +5,17 @@
 #include <sstream>
 #include <tuple>
 #include <unordered_set>
+#include <cstring>
+#include <cctype>
+#include <algorithm>
+#include <iostream>
 using namespace std;
+
+static void strlwr(char* str) {
+    for (int i = 0; str[i]; i++) {
+        str[i] = tolower(str[i]);
+    }
+}
 
 DataPlace::DataPlace() : LengthNodes(0), heightSC(0) {
     srand((unsigned int)time(NULL));
@@ -27,7 +37,6 @@ void DataPlace::parseAuxFile(const char* p_aux) {
     ifstream f_aux(p_aux, ios::in);
     if (!f_aux) {
         cerr << "Ошибка чтения файла .aux" << endl;
-        system("pause");
         exit(1);
     } else {
         f_aux.ignore(100, ':');
@@ -165,7 +174,8 @@ void DataPlace::parseScl() {
 
     while (f_scl) {
         f_scl >> temp;
-        if (!strcmp(_strlwr(temp), "numrows")) {
+        strlwr(temp);
+        if (!strcmp(temp, "numrows")) {
             f_scl.ignore(10, ':');
             f_scl >> NumRows;
             for (int i = 0; i < NumRows; i++) {

@@ -1,11 +1,14 @@
 #ifndef _VISUALIZATION_H_
 #define _VISUALIZATION_H_
 
+#ifdef __APPLE__
+#include <GLUT/glut.h>
+#else
 #include <GL/glut.h>
-#include <math.h>
+#endif
+#include <cmath>
 #include "BBox.h"
 #include "DataPlace.h"
-#pragma comment(lib, "glut32.lib")
 
 void draw_circle(double x, double y, double r);  // отрисовывает окружность по
 // заданным координатам центра

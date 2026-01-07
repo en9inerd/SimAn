@@ -1,6 +1,9 @@
 // SimAnneal.cpp
 
 #include "SimAnneal.h"
+#include <iostream>
+#include <iomanip>
+#include <cfloat>
 
 using std::cout;
 using std::endl;
@@ -42,9 +45,19 @@ SimAnneal::SimAnneal(DataPlace& rbplace, bool gr, bool det)
     penaltyRow = rb.evalPRow();
     oldCost = cost();
 
-    initTemp = curTemp =
-        (detailed) ? hpwl / rb.NumNets : oldCost;  // initial HPWL per net
+    double areaPerCell = layoutArea / rb.NumCells;
+    
+    if (detailed) {
+        initTemp = curTemp = (hpwl > 0) ? hpwl / rb.NumNets : areaPerCell / 10.0;
+    } else {
+        initTemp = curTemp = oldCost;
+    }
+    if (curTemp <= 0 || curTemp != curTemp) {
+        curTemp = areaPerCell / 10.0;
+        initTemp = curTemp;
+    }
     stopTemp = curTemp / 100;
+    if (stopTemp <= 0) stopTemp = curTemp / 1000;
     k = 1;  // specify user
     maxIter = k * rb.NumCells;
 
@@ -576,7 +589,11 @@ void SimAnneal::dynamic_window() {
     double minxspan = 5 * widthPerCell;
 
     if (detailed) {
-        windowfactor = log10(curTemp / stopTemp) / log10(initTemp / stopTemp);
+        if (curTemp > 0 && stopTemp > 0 && initTemp > stopTemp) {
+            windowfactor = log10(curTemp / stopTemp) / log10(initTemp / stopTemp);
+        } else {
+            windowfactor = 1.0;
+        }
     } else {
         if (I < 23)
             windowfactor = 1;

@@ -5,6 +5,8 @@
 #include "paramproc.h"
 #include <limits>
 #include <string>
+#include <cstdio>
+#include <cstdlib>
 
 static char _uninitialized[] = "Uninitialized";
 
@@ -58,7 +60,8 @@ Param::Param(const char* key, Type pt, int argc, const char* const argv[])
                 _b = true;
                 if (n + 1 < argc) {
                     char tmp[80];
-                    strncpy_s(tmp, argv[n + 1], 80);
+                    strncpy(tmp, argv[n + 1], 79);
+                    tmp[79] = '\0';  // Ensure null termination
                     switch (_pt) {
                         case BOOL:
                             break;

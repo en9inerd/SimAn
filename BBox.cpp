@@ -1,5 +1,6 @@
 #include "BBox.h"
 #include <tuple>
+#include <cfloat>
 
 BBox::BBox(DataPlace& rbplace, bool forViewer)
     : rb(rbplace),

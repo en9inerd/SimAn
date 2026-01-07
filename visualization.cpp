@@ -117,14 +117,21 @@ void draw_scene() {
 }
 
 void render_scene() {
-    glClearColor(255, 255, 255, 1);
+    glClearColor(1.0, 1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
     glViewport(0, 0, glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT));
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(45, glutGet(GLUT_WINDOW_WIDTH) / glutGet(GLUT_WINDOW_HEIGHT),
-                   0.1, 100);
-    glTranslated(moving_x, moving_y, -10 + zoom);
+    double aspect = (double)glutGet(GLUT_WINDOW_WIDTH) / (double)glutGet(GLUT_WINDOW_HEIGHT);
+    double viewSize = 200.0 * (1.0 + zoom * 0.1);
+    if (aspect >= 1.0) {
+        glOrtho(-viewSize * aspect, viewSize * aspect, -viewSize, viewSize, -100, 100);
+    } else {
+        glOrtho(-viewSize, viewSize, -viewSize / aspect, viewSize / aspect, -100, 100);
+    }
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glTranslated(moving_x, moving_y, 0);
     glRotatef(angle, 0, 0, 1);
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

@@ -2,7 +2,10 @@
 // application.
 
 #include <iostream>
+#include <iomanip>
 #include <locale>
+#include <cstdlib>
+#include <ctime>
 #include "DataPlace.h"
 #include "SimAnneal.h"
 #include "paramproc.h"
@@ -24,7 +27,7 @@ int main(int argc, char* argv[]) {
     StringParam auxFileName("f", argc, argv);
     StringParam outFileName("save", argc, argv);
     BoolParam keepOverlaps("skipLegal", argc, argv);
-    // BoolParam	detailed		("detailed",argc,argv);
+    BoolParam detailed("detailed", argc, argv);
     BoolParam greedy("greedy", argc, argv);
     // BoolParam	viewer			("viewer",argc,argv);
 
@@ -38,18 +41,15 @@ int main(int argc, char* argv[]) {
     	exit(0);
     }
 
-    const char* aux = "ibm_test.aux";
+    const char* aux = auxFileName.found() ? auxFileName : "ibm_test.aux";
     rbplace.Start(aux);
-
-    rbplace.Start(auxFileName);
 
     if(!keepOverlaps.found())
     	rbplace.remOverlaps();
 
-    bool detailed = false;
     double initHPWL = 0;
 
-    if (detailed) {
+    if (detailed.found()) {
         initHPWL = rbplace.evalHPWL();
         cout << " ====== Launching Detailed Placement ... " << endl;
     } else {
@@ -71,14 +71,14 @@ int main(int argc, char* argv[]) {
          << (initHPWL - HPWLafter) * 100 / HPWLafter << endl;
     cout << "Time taken = " << GlobalTime << " seconds\n";
 
-    bool viewer = true;
+    BoolParam viewer("viewer", argc, argv);
 
     if (true) {
         cout << "ibm_SA_out.pl" << endl;
         rbplace.savePlacement("ibm_SA_out.pl");
     }
 
-    if (viewer) {
+    if (viewer.found()) {
         cout << "\n\t -<View visualization .pl>-" << endl;
         opengl_control(argc, argv);
     }
