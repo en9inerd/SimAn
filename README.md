@@ -31,14 +31,21 @@ The executable `siman` will be created in the project directory.
 - `-f filename.aux` - Input file in Bookshelf format (required)
 - `-save filename.pl` - Output placement file (default: `ibm_SA_out.pl`)
 - `-detailed` - Use detailed placement mode (default: global placement)
-- `-greedy` - Greedy mode without annealing (faster, less optimal)
+- `-greedy` - Greedy mode without annealing (faster, less optimal). Can be combined with `-detailed`
 - `-skipLegal` - Skip legalization step
 - `-help` or `-h` - Show help message
 
-### Example
+### Examples
 
 ```bash
+# Detailed placement with annealing (default for detailed mode)
 ./siman -f benchmark.aux -save output.pl -detailed
+
+# Global placement with greedy moves
+./siman -f benchmark.aux -greedy
+
+# Detailed placement with greedy moves
+./siman -f benchmark.aux -detailed -greedy
 ```
 
 ## Input Format

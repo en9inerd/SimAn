@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
          << endl;
 
     const clock_t start = clock();
-    SimAnneal SA(rbplace, false, detailed);  // (rbplace, greedy, detailed)
+    SimAnneal SA(rbplace, greedy.found(), detailed);  // (rbplace, greedy, detailed)
     // rbplace.remOverlaps();
     const double GlobalTime =
         static_cast<double>(clock() - start) / CLOCKS_PER_SEC;
